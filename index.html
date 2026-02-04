@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SD-WAN Gantt Chart MVP</title>
+    <title>SD-WAN Gantt Pro</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Chart.js & Date Adapter -->
@@ -30,7 +30,6 @@
         .gantt-row { height: var(--row-height); border-bottom: 1px solid #F1F5F9; box-sizing: border-box; }
         .gantt-header { height: var(--header-height); background: #F8FAFC; position: sticky; top: 0; z-index: 20; border-bottom: 1px solid #E2E8F0; }
         
-        /* Table Typography */
         th { 
             white-space: nowrap; font-size: 0.7rem; color: #64748B; 
             text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; text-align: left; padding: 0 8px;
@@ -44,7 +43,7 @@
         .editable { cursor: pointer; transition: background-color 0.15s; }
         .editable:hover { background-color: #F1F5F9; color: #4F46E5; }
         .editing { padding: 0 !important; }
-        .editing input { width: 100%; height: 100%; border: 2px solid #6366F1; padding: 0 8px; font-size: 0.75rem; outline: none; background: #EEF2FF; }
+        .editing input, .editing select { width: 100%; height: 100%; border: 2px solid #6366F1; padding: 0 8px; font-size: 0.75rem; outline: none; background: #EEF2FF; }
 
         .truncate-text { max-width: 180px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
 
@@ -65,14 +64,14 @@
             <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold">P</div>
             <div>
                 <h1 class="text-lg font-bold text-slate-900 leading-tight">SD-WAN Project Plan</h1>
-                <p class="text-xs text-slate-500">Gantt MVP | <span id="task-count">72</span> Tasks</p>
+                <p class="text-xs text-slate-500">Pro Gantt | <span id="task-count">72</span> Tasks</p>
             </div>
         </div>
         
         <div class="flex items-center gap-4">
-            <!-- Baseline Controls -->
+            <!-- Controls -->
             <div class="flex items-center gap-2 mr-4 border-r border-slate-200 pr-4">
-                <button onclick="setBaseline()" class="text-[10px] font-bold uppercase text-slate-500 hover:text-indigo-600 bg-slate-50 hover:bg-indigo-50 px-3 py-1.5 rounded transition-colors" title="Snapshot current schedule as baseline">
+                <button onclick="setBaseline()" class="text-[10px] font-bold uppercase text-slate-500 hover:text-indigo-600 bg-slate-50 hover:bg-indigo-50 px-3 py-1.5 rounded transition-colors">
                     Set Baseline
                 </button>
                 <label class="flex items-center gap-2 cursor-pointer">
@@ -112,7 +111,8 @@
                         <tr>
                             <th class="w-10 text-center">ID</th>
                             <th>Task Name</th>
-                            <th class="w-10 text-center" title="Dependency">Dep</th>
+                            <th class="w-16 text-center" title="Dependency">Dep</th>
+                            <th class="w-12 text-center" title="Dependency Type">Type</th>
                             <th class="w-12 text-center">Dur</th>
                             <th class="w-20">Start</th>
                             <th class="w-20">Finish</th>
@@ -151,7 +151,7 @@
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Type</label>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Category</label>
                         <select id="m-type" class="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none bg-white">
                             <option value="design">Design Task</option>
                             <option value="procure">Procurement</option>
@@ -163,35 +163,47 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Predecessor ID</label>
-                        <input type="number" id="m-parent" placeholder="Optional" class="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Duration (Days)</label>
+                        <input type="number" id="m-dur" value="1" min="0" class="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
                     </div>
                 </div>
-                <div class="bg-slate-50 p-4 rounded-lg border border-slate-100 grid grid-cols-3 gap-3">
+
+                <!-- Dependency Section -->
+                <div class="bg-indigo-50 p-4 rounded-lg border border-indigo-100">
+                    <h4 class="text-xs font-bold text-indigo-800 uppercase mb-2">Dependency Logic</h4>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[10px] font-bold text-indigo-500 uppercase mb-1">Predecessor ID</label>
+                            <input type="number" id="m-parent" placeholder="e.g. 10" class="w-full border border-indigo-200 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-indigo-500 uppercase mb-1">Dep. Type</label>
+                            <select id="m-depType" class="w-full border border-indigo-200 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none bg-white">
+                                <option value="FS">Finish-to-Start (FS)</option>
+                                <option value="SS">Start-to-Start (SS)</option>
+                                <option value="FF">Finish-to-Finish (FF)</option>
+                                <option value="SF">Start-to-Finish (SF)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Start Date</label>
-                        <input type="date" id="m-start" class="w-full border border-slate-300 rounded px-2 py-2 text-xs focus:ring-2 focus:ring-indigo-500 outline-none">
+                        <input type="date" id="m-start" class="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
                     </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Duration (Days)</label>
-                        <input type="number" id="m-dur" value="1" min="0" class="w-full border border-slate-300 rounded px-2 py-2 text-xs focus:ring-2 focus:ring-indigo-500 outline-none">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Finish Date</label>
-                        <input type="date" id="m-finish" class="w-full border border-slate-300 rounded px-2 py-2 text-xs focus:ring-2 focus:ring-indigo-500 outline-none">
-                    </div>
-                </div>
-                <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-1">% Complete</label>
                         <input type="number" id="m-pct" value="0" min="0" max="100" class="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
                     </div>
-                    <div id="div-insert">
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Insert After</label>
-                        <select id="m-insert" class="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none bg-white">
-                            <option value="end">-- End of List --</option>
-                        </select>
-                    </div>
+                </div>
+                
+                <div id="div-insert" class="hidden">
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Insert After</label>
+                    <select id="m-insert" class="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none bg-white">
+                        <option value="end">-- End of List --</option>
+                    </select>
                 </div>
             </div>
 
@@ -205,79 +217,79 @@
     <script>
         // --- 1. DATASET ---
         let projectData = [
-            { id: 1, name: "Project Plan Root", parent: null, start: "2026-01-08", dur: 0, type: "root", pct: 100 },
-            { id: 3, name: "Contract & PO Signed", parent: 1, start: "2026-01-08", dur: 0, type: "milestone", pct: 100 },
-            { id: 4, name: "Gate 1: Kick Off", parent: 1, start: "2026-02-04", dur: 1, type: "gate", pct: 100 },
-            { id: 5, name: "Gate 2: Discovery", parent: 4, start: "2026-03-10", dur: 1, type: "gate", pct: 20 },
-            { id: 6, name: "Gate 3: Pilot", parent: 5, start: "2026-03-20", dur: 1, type: "gate", pct: 0 },
-            { id: 7, name: "Gate 4: Rollout", parent: 6, start: "2026-04-27", dur: 1, type: "gate", pct: 0 },
-            { id: 8, name: "Gate 5: Closure", parent: 7, start: "2026-05-04", dur: 1, type: "gate", pct: 0 },
-            { id: 10, name: "Confirm Final Design", parent: 1, start: "2026-01-09", dur: 3, type: "design", pct: 100 },
-            { id: 11, name: "Prepare SSD & Cabling", parent: 10, start: "2026-01-14", dur: 2, type: "design", pct: 100 },
-            { id: 12, name: "Enter Orders (GTT)", parent: 10, start: "2026-01-14", dur: 10, type: "procure", pct: 90 },
-            { id: 13, name: "MSA Signature", parent: 10, start: "2026-01-14", dur: 12, type: "design", pct: 80 },
-            { id: 14, name: "PON Re-signing", parent: 12, start: "2026-01-28", dur: 5, type: "procure", pct: 50 },
-            { id: 15, name: "Orders Validated", parent: 14, start: "2026-02-04", dur: 2, type: "procure", pct: 0 },
-            { id: 16, name: "EnvisionEdge Cert", parent: 1, start: "2026-01-09", dur: 6, type: "design", pct: 100 },
-            { id: 18, name: "Internal Acceptance", parent: 15, start: "2026-02-06", dur: 3, type: "admin", pct: 0 },
-            { id: 19, name: "PON Validation", parent: 18, start: "2026-02-11", dur: 1, type: "admin", pct: 0 },
-            { id: 20, name: "External Kick Off", parent: 19, start: "2026-02-12", dur: 2, type: "admin", pct: 0 },
-            { id: 21, name: "PID Agreed", parent: 20, start: "2026-02-16", dur: 2, type: "admin", pct: 0 },
-            { id: 22, name: "Plan Created", parent: 16, start: "2026-01-19", dur: 2, type: "admin", pct: 100 },
-            { id: 23, name: "Tracker Created", parent: 16, start: "2026-01-19", dur: 2, type: "admin", pct: 100 },
-            { id: 24, name: "RAID Log Created", parent: 16, start: "2026-01-19", dur: 2, type: "admin", pct: 100 },
-            { id: 26, name: "Share SSD/HLD", parent: 16, start: "2026-01-19", dur: 8, type: "design", pct: 60 },
-            { id: 27, name: "Share TAD", parent: 15, start: "2026-02-06", dur: 2, type: "design", pct: 0 },
-            { id: 28, name: "Update IP Addresses", parent: 12, start: "2026-01-28", dur: 1, type: "design", pct: 0 },
-            { id: 30, name: "TAD Approved", parent: 27, start: "2026-02-10", dur: 2, type: "design", pct: 0 },
-            { id: 31, name: "Schedule Workshops", parent: 27, start: "2026-02-10", dur: 2, type: "design", pct: 0 },
-            { id: 32, name: "Config Review (Workshops)", parent: 27, start: "2026-02-10", dur: 20, type: "design", pct: 0 },
-            { id: 33, name: "Agree Solution", parent: 32, start: "2026-03-10", dur: 5, type: "design", pct: 0 },
-            { id: 34, name: "Client Tech Info", parent: 28, start: "2026-01-29", dur: 15, type: "design", pct: 10 },
-            { id: 36, name: "NetProv Confirm", parent: 15, start: "2026-02-06", dur: 0, type: "logistics", pct: 0 },
-            { id: 37, name: "Pilot Pre-stage", parent: 28, start: "2026-01-29", dur: 6, type: "logistics", pct: 20 },
-            { id: 38, name: "Pilot Shipment", parent: 37, start: "2026-02-06", dur: 15, type: "logistics", pct: 0 },
-            { id: 39, name: "Rollout Pre-stage", parent: 27, start: "2026-02-10", dur: 10, type: "logistics", pct: 0 },
-            { id: 40, name: "Rollout Shipment", parent: 39, start: "2026-02-24", dur: 15, type: "logistics", pct: 0 },
-            { id: 42, name: "Identify Pilot Sites", parent: 21, start: "2026-02-18", dur: 1, type: "design", pct: 0 },
-            { id: 43, name: "Final Workshop", parent: 38, start: "2026-02-27", dur: 3, type: "design", pct: 0 },
-            { id: 44, name: "Final LLDs", parent: 43, start: "2026-03-04", dur: 1, type: "design", pct: 0 },
-            { id: 45, name: "Define Success Scope", parent: 33, start: "2026-03-17", dur: 5, type: "design", pct: 0 },
-            { id: 46, name: "Determine UAT", parent: 33, start: "2026-03-17", dur: 5, type: "design", pct: 0 },
-            { id: 47, name: "Create Runbook", parent: 43, start: "2026-03-04", dur: 1, type: "design", pct: 0 },
-            { id: 49, name: "Site 1 Mig", parent: 44, start: "2026-03-05", dur: 1, type: "rollout", pct: 0 },
-            { id: 50, name: "Site 2 Mig", parent: 49, start: "2026-03-06", dur: 2, type: "rollout", pct: 0 },
-            { id: 51, name: "Site 3 Mig", parent: 50, start: "2026-03-10", dur: 2, type: "rollout", pct: 0 },
-            { id: 52, name: "Design Signed", parent: 51, start: "2026-03-12", dur: 5, type: "design", pct: 0 },
-            { id: 53, name: "Create DDD", parent: 52, start: "2026-03-19", dur: 1, type: "design", pct: 0 },
-            { id: 54, name: "Handover Net Prov", parent: 53, start: "2026-03-20", dur: 1, type: "admin", pct: 0 },
-            { id: 56, name: "Site 3 Rollout", parent: 54, start: "2026-03-23", dur: 5, type: "rollout", pct: 0 },
-            { id: 57, name: "Site 4 Rollout", parent: 56, start: "2026-03-30", dur: 2, type: "rollout", pct: 0 },
-            { id: 58, name: "Site 5 Rollout", parent: 57, start: "2026-04-01", dur: 2, type: "rollout", pct: 0 },
-            { id: 59, name: "Site 6 Rollout", parent: 58, start: "2026-04-03", dur: 2, type: "rollout", pct: 0 },
-            { id: 60, name: "Site 7 Rollout", parent: 59, start: "2026-04-07", dur: 2, type: "rollout", pct: 0 },
-            { id: 61, name: "Site 8 Rollout", parent: 60, start: "2026-04-09", dur: 2, type: "rollout", pct: 0 },
-            { id: 62, name: "Site 9 Rollout", parent: 61, start: "2026-04-13", dur: 2, type: "rollout", pct: 0 },
-            { id: 63, name: "Site 10 Rollout", parent: 62, start: "2026-04-15", dur: 2, type: "rollout", pct: 0 },
-            { id: 64, name: "Site 11 Rollout", parent: 63, start: "2026-04-17", dur: 2, type: "rollout", pct: 0 },
-            { id: 65, name: "Site 12 Rollout", parent: 64, start: "2026-04-21", dur: 2, type: "rollout", pct: 0 },
-            { id: 66, name: "Site 13 Rollout", parent: 65, start: "2026-04-23", dur: 2, type: "rollout", pct: 0 },
-            { id: 67, name: "Site 14 Rollout", parent: 66, start: "2026-04-27", dur: 2, type: "rollout", pct: 0 },
-            { id: 68, name: "EnvisionDX Access", parent: 49, start: "2026-03-06", dur: 1, type: "admin", pct: 0 },
-            { id: 69, name: "Service Reviews", parent: 49, start: "2026-03-06", dur: 1, type: "admin", pct: 0 },
-            { id: 71, name: "Lessons Learned", parent: 67, start: "2026-04-29", dur: 3, type: "admin", pct: 0 },
-            { id: 72, name: "Project Closed", parent: 71, start: "2026-05-04", dur: 2, type: "gate", pct: 0 }
+            { id: 1, name: "Project Plan Root", parent: null, depType: "FS", start: "2026-01-08", dur: 0, type: "root", pct: 100 },
+            { id: 3, name: "Contract & PO Signed", parent: 1, depType: "FS", start: "2026-01-08", dur: 0, type: "milestone", pct: 100 },
+            { id: 4, name: "Gate 1: Kick Off", parent: 1, depType: "FS", start: "2026-02-04", dur: 1, type: "gate", pct: 100 },
+            { id: 5, name: "Gate 2: Discovery", parent: 4, depType: "FS", start: "2026-03-10", dur: 1, type: "gate", pct: 20 },
+            { id: 6, name: "Gate 3: Pilot", parent: 5, depType: "FS", start: "2026-03-20", dur: 1, type: "gate", pct: 0 },
+            { id: 7, name: "Gate 4: Rollout", parent: 6, depType: "FS", start: "2026-04-27", dur: 1, type: "gate", pct: 0 },
+            { id: 8, name: "Gate 5: Closure", parent: 7, depType: "FS", start: "2026-05-04", dur: 1, type: "gate", pct: 0 },
+            { id: 10, name: "Confirm Final Design", parent: 1, depType: "FS", start: "2026-01-09", dur: 3, type: "design", pct: 100 },
+            { id: 11, name: "Prepare SSD & Cabling", parent: 10, depType: "FS", start: "2026-01-14", dur: 2, type: "design", pct: 100 },
+            { id: 12, name: "Enter Orders (GTT)", parent: 10, depType: "FS", start: "2026-01-14", dur: 10, type: "procure", pct: 90 },
+            { id: 13, name: "MSA Signature", parent: 10, depType: "FS", start: "2026-01-14", dur: 12, type: "design", pct: 80 },
+            { id: 14, name: "PON Re-signing", parent: 12, depType: "FS", start: "2026-01-28", dur: 5, type: "procure", pct: 50 },
+            { id: 15, name: "Orders Validated", parent: 14, depType: "FS", start: "2026-02-04", dur: 2, type: "procure", pct: 0 },
+            { id: 16, name: "EnvisionEdge Cert", parent: 1, depType: "FS", start: "2026-01-09", dur: 6, type: "design", pct: 100 },
+            { id: 18, name: "Internal Acceptance", parent: 15, depType: "FS", start: "2026-02-06", dur: 3, type: "admin", pct: 0 },
+            { id: 19, name: "PON Validation", parent: 18, depType: "FS", start: "2026-02-11", dur: 1, type: "admin", pct: 0 },
+            { id: 20, name: "External Kick Off", parent: 19, depType: "FS", start: "2026-02-12", dur: 2, type: "admin", pct: 0 },
+            { id: 21, name: "PID Agreed", parent: 20, depType: "FS", start: "2026-02-16", dur: 2, type: "admin", pct: 0 },
+            { id: 22, name: "Plan Created", parent: 16, depType: "FS", start: "2026-01-19", dur: 2, type: "admin", pct: 100 },
+            { id: 23, name: "Tracker Created", parent: 16, depType: "FS", start: "2026-01-19", dur: 2, type: "admin", pct: 100 },
+            { id: 24, name: "RAID Log Created", parent: 16, depType: "FS", start: "2026-01-19", dur: 2, type: "admin", pct: 100 },
+            { id: 26, name: "Share SSD/HLD", parent: 16, depType: "FS", start: "2026-01-19", dur: 8, type: "design", pct: 60 },
+            { id: 27, name: "Share TAD", parent: 15, depType: "FS", start: "2026-02-06", dur: 2, type: "design", pct: 0 },
+            { id: 28, name: "Update IP Addresses", parent: 12, depType: "FS", start: "2026-01-28", dur: 1, type: "design", pct: 0 },
+            { id: 30, name: "TAD Approved", parent: 27, depType: "FS", start: "2026-02-10", dur: 2, type: "design", pct: 0 },
+            { id: 31, name: "Schedule Workshops", parent: 27, depType: "FS", start: "2026-02-10", dur: 2, type: "design", pct: 0 },
+            { id: 32, name: "Config Review (Workshops)", parent: 27, depType: "FS", start: "2026-02-10", dur: 20, type: "design", pct: 0 },
+            { id: 33, name: "Agree Solution", parent: 32, depType: "FS", start: "2026-03-10", dur: 5, type: "design", pct: 0 },
+            { id: 34, name: "Client Tech Info", parent: 28, depType: "FS", start: "2026-01-29", dur: 15, type: "design", pct: 10 },
+            { id: 36, name: "NetProv Confirm", parent: 15, depType: "FS", start: "2026-02-06", dur: 0, type: "logistics", pct: 0 },
+            { id: 37, name: "Pilot Pre-stage", parent: 28, depType: "FS", start: "2026-01-29", dur: 6, type: "logistics", pct: 20 },
+            { id: 38, name: "Pilot Shipment", parent: 37, depType: "FS", start: "2026-02-06", dur: 15, type: "logistics", pct: 0 },
+            { id: 39, name: "Rollout Pre-stage", parent: 27, depType: "FS", start: "2026-02-10", dur: 10, type: "logistics", pct: 0 },
+            { id: 40, name: "Rollout Shipment", parent: 39, depType: "FS", start: "2026-02-24", dur: 15, type: "logistics", pct: 0 },
+            { id: 42, name: "Identify Pilot Sites", parent: 21, depType: "FS", start: "2026-02-18", dur: 1, type: "design", pct: 0 },
+            { id: 43, name: "Final Workshop", parent: 38, depType: "FS", start: "2026-02-27", dur: 3, type: "design", pct: 0 },
+            { id: 44, name: "Final LLDs", parent: 43, depType: "FS", start: "2026-03-04", dur: 1, type: "design", pct: 0 },
+            { id: 45, name: "Define Success Scope", parent: 33, depType: "FS", start: "2026-03-17", dur: 5, type: "design", pct: 0 },
+            { id: 46, name: "Determine UAT", parent: 33, depType: "FS", start: "2026-03-17", dur: 5, type: "design", pct: 0 },
+            { id: 47, name: "Create Runbook", parent: 43, depType: "FS", start: "2026-03-04", dur: 1, type: "design", pct: 0 },
+            { id: 49, name: "Site 1 Mig", parent: 44, depType: "FS", start: "2026-03-05", dur: 1, type: "rollout", pct: 0 },
+            { id: 50, name: "Site 2 Mig", parent: 49, depType: "FS", start: "2026-03-06", dur: 2, type: "rollout", pct: 0 },
+            { id: 51, name: "Site 3 Mig", parent: 50, depType: "FS", start: "2026-03-10", dur: 2, type: "rollout", pct: 0 },
+            { id: 52, name: "Design Signed", parent: 51, depType: "FS", start: "2026-03-12", dur: 5, type: "design", pct: 0 },
+            { id: 53, name: "Create DDD", parent: 52, depType: "FS", start: "2026-03-19", dur: 1, type: "design", pct: 0 },
+            { id: 54, name: "Handover Net Prov", parent: 53, depType: "FS", start: "2026-03-20", dur: 1, type: "admin", pct: 0 },
+            { id: 56, name: "Site 3 Rollout", parent: 54, depType: "FS", start: "2026-03-23", dur: 5, type: "rollout", pct: 0 },
+            { id: 57, name: "Site 4 Rollout", parent: 56, depType: "FS", start: "2026-03-30", dur: 2, type: "rollout", pct: 0 },
+            { id: 58, name: "Site 5 Rollout", parent: 57, depType: "FS", start: "2026-04-01", dur: 2, type: "rollout", pct: 0 },
+            { id: 59, name: "Site 6 Rollout", parent: 58, depType: "FS", start: "2026-04-03", dur: 2, type: "rollout", pct: 0 },
+            { id: 60, name: "Site 7 Rollout", parent: 59, depType: "FS", start: "2026-04-07", dur: 2, type: "rollout", pct: 0 },
+            { id: 61, name: "Site 8 Rollout", parent: 60, depType: "FS", start: "2026-04-09", dur: 2, type: "rollout", pct: 0 },
+            { id: 62, name: "Site 9 Rollout", parent: 61, depType: "FS", start: "2026-04-13", dur: 2, type: "rollout", pct: 0 },
+            { id: 63, name: "Site 10 Rollout", parent: 62, depType: "FS", start: "2026-04-15", dur: 2, type: "rollout", pct: 0 },
+            { id: 64, name: "Site 11 Rollout", parent: 63, depType: "FS", start: "2026-04-17", dur: 2, type: "rollout", pct: 0 },
+            { id: 65, name: "Site 12 Rollout", parent: 64, depType: "FS", start: "2026-04-21", dur: 2, type: "rollout", pct: 0 },
+            { id: 66, name: "Site 13 Rollout", parent: 65, depType: "FS", start: "2026-04-23", dur: 2, type: "rollout", pct: 0 },
+            { id: 67, name: "Site 14 Rollout", parent: 66, depType: "FS", start: "2026-04-27", dur: 2, type: "rollout", pct: 0 },
+            { id: 68, name: "EnvisionDX Access", parent: 49, depType: "FS", start: "2026-03-06", dur: 1, type: "admin", pct: 0 },
+            { id: 69, name: "Service Reviews", parent: 49, depType: "FS", start: "2026-03-06", dur: 1, type: "admin", pct: 0 },
+            { id: 71, name: "Lessons Learned", parent: 67, depType: "FS", start: "2026-04-29", dur: 3, type: "admin", pct: 0 },
+            { id: 72, name: "Project Closed", parent: 71, depType: "FS", start: "2026-05-04", dur: 2, type: "gate", pct: 0 }
         ];
 
         // --- 2. LOGIC: CRITICAL PATH & BASELINE ---
         const criticalPathSet = new Set();
         let showBaseline = true;
 
-        // Init Data: Ensure every task has a baseline property equal to initial state
         function initData() {
             projectData.forEach(t => {
                 if (!t.baseStart) t.baseStart = t.start;
                 if (!t.baseDur) t.baseDur = t.dur;
+                if (!t.depType) t.depType = "FS"; // Default
             });
         }
 
@@ -291,13 +303,51 @@
             }
         }
 
+        // --- SCHEDULING ENGINE WITH ADVANCED DEPENDENCIES ---
+        function calculateSchedule() {
+            // Sort by ID to ensure parent processed before child
+            const sortedTasks = [...projectData].sort((a, b) => a.id - b.id);
+            
+            sortedTasks.forEach(task => {
+                if (task.parent) {
+                    const parent = projectData.find(p => p.id === task.parent);
+                    if (parent) {
+                        const pStart = new Date(parent.start);
+                        const pEnd = new Date(pStart.getTime() + (parent.dur * 86400000));
+                        
+                        let newStart;
+                        // Dependency Logic
+                        switch(task.depType) {
+                            case 'SS': // Start-to-Start: Task starts when Parent starts
+                                newStart = pStart;
+                                break;
+                            case 'FF': // Finish-to-Finish: Task finishes when Parent finishes
+                                // Start = ParentEnd - TaskDur
+                                newStart = new Date(pEnd.getTime() - (task.dur * 86400000));
+                                break;
+                            case 'SF': // Start-to-Finish: Task finishes when Parent starts
+                                // Finish = ParentStart => Start = ParentStart - TaskDur
+                                newStart = new Date(pStart.getTime() - (task.dur * 86400000));
+                                break;
+                            case 'FS': // Finish-to-Start (Default): Task starts when Parent ends
+                            default:
+                                newStart = pEnd;
+                                break;
+                        }
+                        
+                        task.start = newStart.toISOString().split('T')[0];
+                    }
+                }
+            });
+        }
+
         function setBaseline() {
             if(confirm("Overwrite Baseline with Current Schedule?")) {
                 projectData.forEach(t => {
                     t.baseStart = t.start;
                     t.baseDur = t.dur;
                 });
-                renderChart(); // Re-render to update baseline bars
+                renderChart();
             }
         }
 
@@ -309,14 +359,14 @@
         // --- 3. MODAL & EDIT LOGIC ---
         let editingId = null;
 
-        // Initialize Modal Logic
         window.addEventListener('load', () => {
             initData();
+            calculateSchedule();
             calculateCriticalPath();
             renderTable();
             renderChart();
             
-            // ... (sync scrolling code below)
+            // Auto Date Logic in Modal
             const mStart = document.getElementById('m-start');
             const mDur = document.getElementById('m-dur');
             const mFinish = document.getElementById('m-finish');
@@ -391,10 +441,12 @@
                 document.getElementById('m-name').value = task.name;
                 document.getElementById('m-type').value = task.type;
                 document.getElementById('m-parent').value = task.parent || '';
+                document.getElementById('m-depType').value = task.depType || 'FS';
                 document.getElementById('m-start').value = task.start;
                 document.getElementById('m-dur').value = task.dur;
                 document.getElementById('m-pct').value = task.pct;
                 
+                // Calc finish
                 const start = new Date(task.start);
                 const end = new Date(start.getTime() + (task.dur * 86400000));
                 document.getElementById('m-finish').value = end.toISOString().split('T')[0];
@@ -406,10 +458,14 @@
                 document.getElementById('m-name').value = "";
                 document.getElementById('m-type').value = "design";
                 document.getElementById('m-parent').value = "";
+                document.getElementById('m-depType').value = "FS";
                 document.getElementById('m-start').value = "2026-01-08";
                 document.getElementById('m-dur').value = "1";
                 document.getElementById('m-pct').value = "0";
-                document.getElementById('m-finish').value = "2026-01-09";
+                
+                const s = new Date("2026-01-08");
+                const e = new Date(s.getTime() + 86400000);
+                document.getElementById('m-finish').value = e.toISOString().split('T')[0];
             }
             
             modal.classList.remove('hidden');
@@ -426,6 +482,7 @@
             const start = document.getElementById('m-start').value;
             const pct = parseInt(document.getElementById('m-pct').value) || 0;
             const parent = parseInt(document.getElementById('m-parent').value) || null;
+            const depType = document.getElementById('m-depType').value;
 
             if (editingId) {
                 const task = projectData.find(t => t.id === editingId);
@@ -436,6 +493,7 @@
                     task.start = start;
                     task.pct = pct;
                     task.parent = parent;
+                    task.depType = depType;
                 }
             } else {
                 const maxId = Math.max(...projectData.map(t => t.id));
@@ -443,8 +501,8 @@
                 const insertVal = document.getElementById('m-insert').value;
                 
                 const newTask = {
-                    id: newId, name, type, dur, start, pct, parent, 
-                    baseStart: start, baseDur: dur // Set baseline for new task equal to current
+                    id: newId, name, type, dur, start, pct, parent, depType,
+                    baseStart: start, baseDur: dur
                 };
 
                 if (insertVal === "end") {
@@ -470,6 +528,7 @@
         }
 
         function refreshView() {
+            calculateSchedule();
             calculateCriticalPath();
             renderTable();
             renderChart();
@@ -501,12 +560,19 @@
                 inputHTML = `<input type="date" value="${currentValue}" onblur="commitEdit(${id}, '${field}', this.value)" onkeydown="if(event.key==='Enter') this.blur()">`;
             } else if (field === 'dur' || field === 'pct' || field === 'parent') {
                 inputHTML = `<input type="number" value="${currentValue}" onblur="commitEdit(${id}, '${field}', this.value)" onkeydown="if(event.key==='Enter') this.blur()">`;
+            } else if (field === 'depType') {
+                inputHTML = `<select onblur="commitEdit(${id}, '${field}', this.value)" class="w-full text-xs bg-slate-100">
+                    <option value="FS" ${currentValue==='FS'?'selected':''}>FS</option>
+                    <option value="SS" ${currentValue==='SS'?'selected':''}>SS</option>
+                    <option value="FF" ${currentValue==='FF'?'selected':''}>FF</option>
+                    <option value="SF" ${currentValue==='SF'?'selected':''}>SF</option>
+                </select>`;
             } else { 
                 inputHTML = `<input type="text" value="${currentValue}" onblur="commitEdit(${id}, '${field}', this.value)" onkeydown="if(event.key==='Enter') this.blur()">`;
             }
 
             cell.innerHTML = inputHTML;
-            const input = cell.querySelector('input');
+            const input = cell.querySelector('input, select');
             input.focus();
         }
 
@@ -514,13 +580,10 @@
             const task = projectData.find(t => t.id === id);
             if (!task) return;
 
-            if (field === 'dur') {
-                task.dur = parseInt(value) || 0;
-            } else if (field === 'pct') {
-                task.pct = Math.min(100, Math.max(0, parseInt(value) || 0));
-            } else if (field === 'parent') {
-                task.parent = value ? parseInt(value) : null;
-            } else if (field === 'start') {
+            if (field === 'dur') task.dur = parseInt(value) || 0;
+            else if (field === 'pct') task.pct = Math.min(100, Math.max(0, parseInt(value) || 0));
+            else if (field === 'parent') task.parent = value ? parseInt(value) : null;
+            else if (field === 'start') {
                 task.start = value;
             } else if (field === 'finish') {
                 const start = new Date(task.start);
@@ -557,11 +620,10 @@
                 row.innerHTML = `
                     <td class="font-mono text-xs text-slate-400 font-bold text-center border-r border-slate-100">${task.id}</td>
                     <td class="border-r border-slate-100 relative editable" onclick="makeEditable(this, ${task.id}, 'name')">
-                        <div class="truncate-text font-medium text-slate-700 text-xs" title="${task.name}">
-                            ${task.name}
-                        </div>
+                        <div class="truncate-text font-medium text-slate-700 text-xs" title="${task.name}">${task.name}</div>
                     </td>
                     <td class="text-center font-mono text-xs text-slate-500 border-r border-slate-100 editable" onclick="makeEditable(this, ${task.id}, 'parent')">${task.parent || '-'}</td>
+                    <td class="text-center font-mono text-xs text-slate-500 border-r border-slate-100 editable" onclick="makeEditable(this, ${task.id}, 'depType')">${task.depType || 'FS'}</td>
                     <td class="text-center font-mono text-xs text-slate-500 border-r border-slate-100 editable" onclick="makeEditable(this, ${task.id}, 'dur')">${task.dur}d</td>
                     <td class="font-mono text-[10px] text-slate-500 border-r border-slate-100 editable" onclick="makeEditable(this, ${task.id}, 'start')">${task.start}</td>
                     <td class="font-mono text-[10px] text-slate-500 border-r border-slate-100 editable" onclick="makeEditable(this, ${task.id}, 'finish')">${endStr}</td>
@@ -574,11 +636,8 @@
                         </div>
                     </td>
                     <td class="text-center">
-                        <button onclick="deleteTask(${task.id})" class="btn-icon-danger" title="Delete Task">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                        </button>
+                        <button onclick="openTaskModal(${task.id})" class="btn-icon inline-block"><svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg></button>
+                        <button onclick="deleteTask(${task.id})" class="btn-icon-danger inline-block"><svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
                     </td>
                 `;
                 tbody.appendChild(row);
@@ -597,7 +656,7 @@
 
             if (chartInstance) chartInstance.destroy();
 
-            // Dataset 0: Baseline (Behind)
+            // Dataset 0: Baseline
             const baselineData = projectData.map(t => {
                 if(!showBaseline) return { x: null, y: `Row ${t.id}` };
                 const s = new Date(t.baseStart);
@@ -605,7 +664,7 @@
                 return { x: [s.getTime(), e.getTime()], y: `Row ${t.id}` };
             });
 
-            // Dataset 1: Actual (Front)
+            // Dataset 1: Actual
             const actualData = projectData.map(t => {
                 const s = new Date(t.start);
                 const e = new Date(s.getTime() + ((t.dur || 0.5) * 86400000));
@@ -619,31 +678,8 @@
                 data: {
                     labels: yLabels,
                     datasets: [
-                        {
-                            label: 'Baseline',
-                            data: baselineData,
-                            backgroundColor: '#94A3B8', // Gray
-                            barPercentage: 0.6,
-                            categoryPercentage: 1.0,
-                            barThickness: 4, // Thin bar
-                            grouped: false, // Overlap
-                            order: 1 // Draw behind
-                        },
-                        {
-                            label: 'Actual',
-                            data: actualData,
-                            backgroundColor: (ctx) => {
-                                const pct = ctx.raw?.status;
-                                if(pct === 100) return '#10B981'; 
-                                if(pct > 0) return '#F59E0B';     
-                                return '#CBD5E1';                 
-                            },
-                            borderRadius: 3,
-                            barPercentage: 0.6,
-                            categoryPercentage: 1.0,
-                            grouped: false,
-                            order: 0 // Draw front
-                        }
+                        { label: 'Baseline', data: baselineData, backgroundColor: '#94A3B8', barThickness: 4, grouped: false, order: 1 },
+                        { label: 'Actual', data: actualData, backgroundColor: (ctx) => { const pct = ctx.raw?.status; if(pct === 100) return '#10B981'; if(pct > 0) return '#F59E0B'; return '#CBD5E1'; }, borderRadius: 3, barPercentage: 0.6, grouped: false, order: 0 }
                     ]
                 },
                 options: {
@@ -653,26 +689,10 @@
                     layout: { padding: { top: 0, bottom: 0, left: 0, right: 20 } },
                     plugins: {
                         legend: { display: false },
-                        tooltip: { 
-                            filter: (item) => item.datasetIndex === 1, // Only tooltips for Actual
-                            callbacks: { 
-                                title: (items) => projectData[items[0].dataIndex].name,
-                                label: (item) => {
-                                    const d = projectData[item.dataIndex];
-                                    return `Actual: ${d.start} (${d.dur}d) | Baseline: ${d.baseStart} (${d.baseDur}d)`;
-                                }
-                            } 
-                        }
+                        tooltip: { enabled: true }
                     },
                     scales: {
-                        x: {
-                            type: 'time',
-                            time: { unit: 'week' },
-                            position: 'top',
-                            min: '2026-01-08',
-                            grid: { color: '#F1F5F9' },
-                            ticks: { font: { size: 10 }, color: '#94A3B8' }
-                        },
+                        x: { type: 'time', time: { unit: 'week' }, position: 'top', min: '2026-01-08', grid: { color: '#F1F5F9' }, ticks: { font: { size: 10 }, color: '#94A3B8' } },
                         y: { display: false, grid: { display: false } }
                     }
                 },
@@ -680,7 +700,7 @@
                     id: 'dependencyArrows',
                     afterDatasetsDraw(chart) {
                         const { ctx } = chart;
-                        const meta = chart.getDatasetMeta(1); // Use Actual dataset for arrows
+                        const meta = chart.getDatasetMeta(1);
                         const idToIndex = {};
                         projectData.forEach((t, i) => idToIndex[t.id] = i);
 
@@ -697,21 +717,56 @@
                                 if (!pBar || !cBar) return;
 
                                 const isCrit = criticalPathSet.has(task.id) && criticalPathSet.has(task.parent);
+                                ctx.strokeStyle = isCrit ? '#9333EA' : '#CBD5E1';
+                                ctx.lineWidth = isCrit ? 2.5 : 1.5;
+                                if (!isCrit) ctx.setLineDash([]);
 
-                                ctx.strokeStyle = isCrit ? '#9333EA' : '#CBD5E1'; 
-                                ctx.lineWidth = isCrit ? 2 : 1;
-                                if (!isCrit) ctx.setLineDash([]); 
+                                // --- ARROW DRAWING LOGIC FOR FS, SS, FF, SF ---
+                                let startX, startY, endX, endY;
+                                
+                                // Coordinates: 
+                                // .base = left side, .x = right side, .y = vertical center
+                                const pLeft = pBar.base;
+                                const pRight = pBar.x;
+                                const cLeft = cBar.base;
+                                const cRight = cBar.x;
+                                const pY = pBar.y;
+                                const cY = cBar.y;
 
-                                const startX = pBar.x;
-                                const startY = pBar.y;
-                                const endX = cBar.base + 2; 
-                                const endY = cBar.y;
+                                // Determine Start Point (from Parent)
+                                if (task.depType === 'SS' || task.depType === 'SF') {
+                                    startX = pLeft; // Start-to...
+                                } else {
+                                    startX = pRight; // Finish-to... (Default FS, FF)
+                                }
+                                startY = pY;
+
+                                // Determine End Point (to Child)
+                                if (task.depType === 'FF' || task.depType === 'SF') {
+                                    endX = cRight; // ...to-Finish
+                                } else {
+                                    endX = cLeft; // ...to-Start (Default FS, SS)
+                                }
+                                endY = cY;
+
+                                // Apply slight offset to make connection clear relative to bar edge
+                                // If connecting to Right side, shift +2px. If Left, shift -2px.
+                                if (startX === pRight) startX += 0; 
+                                else startX -= 0;
+                                
+                                if (endX === cRight) endX += 2;
+                                else endX -= 2;
 
                                 ctx.beginPath();
                                 ctx.moveTo(startX, startY);
-                                ctx.bezierCurveTo(startX + 15, startY, endX - 15, endY, endX, endY);
+                                // Bezier Curve Logic
+                                // Control points depend on direction to create a nice 'S' or 'C' curve
+                                const cp1x = startX + 15; // Move out from parent
+                                const cp2x = endX - 15;   // Move in to child
+                                ctx.bezierCurveTo(cp1x, startY, cp2x, endY, endX, endY);
                                 ctx.stroke();
 
+                                // Arrowhead
                                 ctx.beginPath();
                                 ctx.fillStyle = ctx.strokeStyle;
                                 ctx.moveTo(endX, endY);
@@ -724,13 +779,6 @@
                     }
                 }]
             });
-        }
-
-        // --- NEW STATUS COLOR LOGIC ---
-        function getStatusColor(pct) {
-            if (pct === 100) return '#10B981'; // Green - Completed
-            if (pct > 0) return '#F59E0B';     // Amber - In Progress
-            return '#94A3B8';                 // Grey - Not Started
         }
     </script>
 </body>
