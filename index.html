@@ -52,8 +52,7 @@
 
         /* Modal Styles */
         .modal-overlay { 
-            background-color: rgba(0, 0, 0, 0.5); 
-            backdrop-filter: blur(4px);
+            background-color: rgba(0, 0, 0, 0.2); 
             transition: opacity 0.2s ease-in-out;
         }
     </style>
@@ -66,7 +65,7 @@
             <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold">P</div>
             <div>
                 <h1 class="text-lg font-bold text-slate-900 leading-tight">SD-WAN Project Plan</h1>
-                <p class="text-xs text-slate-500">Pro Gantt | <span id="task-count">72</span> Tasks</p>
+                <p class="text-xs text-slate-500">Pro Gantt | <span id="task-count">72</span> Items</p>
             </div>
         </div>
         
@@ -101,7 +100,7 @@
                 <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> In Progress</div>
                 <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Complete</div>
                 <div class="w-px h-3 bg-slate-300 mx-1"></div>
-                <div class="flex items-center gap-1.5"><span class="w-4 h-1 bg-gray-400"></span> Baseline</div>
+                <div class="flex items-center gap-1.5 transform rotate-45"><span class="w-2 h-2 bg-slate-800"></span></div> Milestone
                 <div class="flex items-center gap-1.5"><span class="w-6 h-0.5 bg-purple-600"></span> Critical</div>
             </div>
 
@@ -111,6 +110,14 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                 </svg>
                 Add Task
+            </button>
+
+            <!-- Report Button -->
+            <button onclick="openReportModal()" class="bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-2 px-4 rounded shadow-sm flex items-center gap-2 transition-colors ml-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                Report/Request
             </button>
         </div>
     </header>
@@ -151,30 +158,25 @@
 
     </main>
 
-    <!-- Modal -->
+    <!-- Task Modal -->
     <div id="taskModal" class="hidden fixed inset-0 z-50 flex items-center justify-center modal-overlay">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden transform transition-all scale-100 m-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden transform transition-all scale-100 m-4 border border-slate-200">
             <div class="bg-slate-50 px-6 py-4 border-b border-slate-100 flex justify-between items-center">
                 <h3 class="text-lg font-bold text-slate-800" id="modalTitle">Add New Task</h3>
                 <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600">&times;</button>
             </div>
             
-            <div class="p-6 space-y-4">
+            <div class="p-6 space-y-4 bg-white/95">
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Task Name</label>
                     <input type="text" id="m-name" class="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Category</label>
-                        <select id="m-type" class="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none bg-white">
-                            <option value="design">Design Task</option>
-                            <option value="procure">Procurement</option>
-                            <option value="logistics">Logistics</option>
-                            <option value="rollout">Rollout</option>
-                            <option value="admin">Admin/Other</option>
-                            <option value="gate">Gate</option>
-                            <option value="milestone">Milestone</option>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Type</label>
+                        <select id="m-type" onchange="toggleDurationState()" class="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none bg-white">
+                            <option value="Task">Task</option>
+                            <option value="Milestone">Milestone</option>
                         </select>
                     </div>
                     <div>
@@ -221,7 +223,6 @@
                     </select>
                 </div>
                 
-                <!-- Hidden Calculation Field -->
                 <input type="hidden" id="m-finish"> 
             </div>
 
@@ -232,74 +233,98 @@
         </div>
     </div>
 
+    <!-- Report Modal -->
+    <div id="reportModal" class="hidden fixed inset-0 z-50 flex items-center justify-center modal-overlay">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all scale-100 m-4 border border-slate-200">
+            <div class="bg-red-50 px-6 py-4 border-b border-red-100 flex justify-between items-center">
+                <h3 class="text-lg font-bold text-red-800">Report Issue / Request</h3>
+                <button onclick="closeReportModal()" class="text-red-400 hover:text-red-600">&times;</button>
+            </div>
+            <div class="p-6 space-y-4 bg-white">
+                <p class="text-sm text-slate-600 leading-relaxed">
+                    Thanks for reporting to <strong>Dorin</strong>. Please describe the issue or suggestion below. 
+                    Once saved, a CSV file will download—please share it with him to add to the backlog.
+                </p>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Description</label>
+                    <textarea id="report-text" rows="4" class="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-red-500 outline-none" placeholder="Describe the bug or feature request..."></textarea>
+                </div>
+            </div>
+            <div class="bg-slate-50 px-6 py-4 border-t border-slate-100 flex justify-end gap-2">
+                <button onclick="closeReportModal()" class="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800">Cancel</button>
+                <button onclick="saveReport()" class="px-4 py-2 text-sm font-bold text-white bg-red-600 rounded hover:bg-red-700 shadow-sm">Save & Download</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // --- 1. DATASET ---
         let projectData = [
-            { id: 1, name: "Project Plan Root", parent: null, depType: "FS", start: "2026-01-08", dur: 0, type: "root", pct: 100 },
-            { id: 3, name: "Contract & PO Signed", parent: 1, depType: "FS", start: "2026-01-08", dur: 0, type: "milestone", pct: 100 },
-            { id: 4, name: "Gate 1: Kick Off", parent: 1, depType: "FS", start: "2026-02-04", dur: 1, type: "gate", pct: 100 },
-            { id: 5, name: "Gate 2: Discovery", parent: 4, depType: "FS", start: "2026-03-10", dur: 1, type: "gate", pct: 20 },
-            { id: 6, name: "Gate 3: Pilot", parent: 5, depType: "FS", start: "2026-03-20", dur: 1, type: "gate", pct: 0 },
-            { id: 7, name: "Gate 4: Rollout", parent: 6, depType: "FS", start: "2026-04-27", dur: 1, type: "gate", pct: 0 },
-            { id: 8, name: "Gate 5: Closure", parent: 7, depType: "FS", start: "2026-05-04", dur: 1, type: "gate", pct: 0 },
-            { id: 10, name: "Confirm Final Design", parent: 1, depType: "FS", start: "2026-01-09", dur: 3, type: "design", pct: 100 },
-            { id: 11, name: "Prepare SSD & Cabling", parent: 10, depType: "FS", start: "2026-01-14", dur: 2, type: "design", pct: 100 },
-            { id: 12, name: "Enter Orders (GTT)", parent: 10, depType: "FS", start: "2026-01-14", dur: 10, type: "procure", pct: 90 },
-            { id: 13, name: "MSA Signature", parent: 10, depType: "FS", start: "2026-01-14", dur: 12, type: "design", pct: 80 },
-            { id: 14, name: "PON Re-signing", parent: 12, depType: "FS", start: "2026-01-28", dur: 5, type: "procure", pct: 50 },
-            { id: 15, name: "Orders Validated", parent: 14, depType: "FS", start: "2026-02-04", dur: 2, type: "procure", pct: 0 },
-            { id: 16, name: "EnvisionEdge Cert", parent: 1, depType: "FS", start: "2026-01-09", dur: 6, type: "design", pct: 100 },
-            { id: 18, name: "Internal Acceptance", parent: 15, depType: "FS", start: "2026-02-06", dur: 3, type: "admin", pct: 0 },
-            { id: 19, name: "PON Validation", parent: 18, depType: "FS", start: "2026-02-11", dur: 1, type: "admin", pct: 0 },
-            { id: 20, name: "External Kick Off", parent: 19, depType: "FS", start: "2026-02-12", dur: 2, type: "admin", pct: 0 },
-            { id: 21, name: "PID Agreed", parent: 20, depType: "FS", start: "2026-02-16", dur: 2, type: "admin", pct: 0 },
-            { id: 22, name: "Plan Created", parent: 16, depType: "FS", start: "2026-01-19", dur: 2, type: "admin", pct: 100 },
-            { id: 23, name: "Tracker Created", parent: 16, depType: "FS", start: "2026-01-19", dur: 2, type: "admin", pct: 100 },
-            { id: 24, name: "RAID Log Created", parent: 16, depType: "FS", start: "2026-01-19", dur: 2, type: "admin", pct: 100 },
-            { id: 26, name: "Share SSD/HLD", parent: 16, depType: "FS", start: "2026-01-19", dur: 8, type: "design", pct: 60 },
-            { id: 27, name: "Share TAD", parent: 15, depType: "FS", start: "2026-02-06", dur: 2, type: "design", pct: 0 },
-            { id: 28, name: "Update IP Addresses", parent: 12, depType: "FS", start: "2026-01-28", dur: 1, type: "design", pct: 0 },
-            { id: 30, name: "TAD Approved", parent: 27, depType: "FS", start: "2026-02-10", dur: 2, type: "design", pct: 0 },
-            { id: 31, name: "Schedule Workshops", parent: 27, depType: "FS", start: "2026-02-10", dur: 2, type: "design", pct: 0 },
-            { id: 32, name: "Config Review (Workshops)", parent: 27, depType: "FS", start: "2026-02-10", dur: 20, type: "design", pct: 0 },
-            { id: 33, name: "Agree Solution", parent: 32, depType: "FS", start: "2026-03-10", dur: 5, type: "design", pct: 0 },
-            { id: 34, name: "Client Tech Info", parent: 28, depType: "FS", start: "2026-01-29", dur: 15, type: "design", pct: 10 },
-            { id: 36, name: "NetProv Confirm", parent: 15, depType: "FS", start: "2026-02-06", dur: 0, type: "logistics", pct: 0 },
-            { id: 37, name: "Pilot Pre-stage", parent: 28, depType: "FS", start: "2026-01-29", dur: 6, type: "logistics", pct: 20 },
-            { id: 38, name: "Pilot Shipment", parent: 37, depType: "FS", start: "2026-02-06", dur: 15, type: "logistics", pct: 0 },
-            { id: 39, name: "Rollout Pre-stage", parent: 27, depType: "FS", start: "2026-02-10", dur: 10, type: "logistics", pct: 0 },
-            { id: 40, name: "Rollout Shipment", parent: 39, depType: "FS", start: "2026-02-24", dur: 15, type: "logistics", pct: 0 },
-            { id: 42, name: "Identify Pilot Sites", parent: 21, depType: "FS", start: "2026-02-18", dur: 1, type: "design", pct: 0 },
-            { id: 43, name: "Final Workshop", parent: 38, depType: "FS", start: "2026-02-27", dur: 3, type: "design", pct: 0 },
-            { id: 44, name: "Final LLDs", parent: 43, depType: "FS", start: "2026-03-04", dur: 1, type: "design", pct: 0 },
-            { id: 45, name: "Define Success Scope", parent: 33, depType: "FS", start: "2026-03-17", dur: 5, type: "design", pct: 0 },
-            { id: 46, name: "Determine UAT", parent: 33, depType: "FS", start: "2026-03-17", dur: 5, type: "design", pct: 0 },
-            { id: 47, name: "Create Runbook", parent: 43, depType: "FS", start: "2026-03-04", dur: 1, type: "design", pct: 0 },
-            { id: 49, name: "Site 1 Mig", parent: 44, depType: "FS", start: "2026-03-05", dur: 1, type: "rollout", pct: 0 },
-            { id: 50, name: "Site 2 Mig", parent: 49, depType: "FS", start: "2026-03-06", dur: 2, type: "rollout", pct: 0 },
-            { id: 51, name: "Site 3 Mig", parent: 50, depType: "FS", start: "2026-03-10", dur: 2, type: "rollout", pct: 0 },
-            { id: 52, name: "Design Signed", parent: 51, depType: "FS", start: "2026-03-12", dur: 5, type: "design", pct: 0 },
-            { id: 53, name: "Create DDD", parent: 52, depType: "FS", start: "2026-03-19", dur: 1, type: "design", pct: 0 },
-            { id: 54, name: "Handover Net Prov", parent: 53, depType: "FS", start: "2026-03-20", dur: 1, type: "admin", pct: 0 },
-            { id: 56, name: "Site 3 Rollout", parent: 54, depType: "FS", start: "2026-03-23", dur: 5, type: "rollout", pct: 0 },
-            { id: 57, name: "Site 4 Rollout", parent: 56, depType: "FS", start: "2026-03-30", dur: 2, type: "rollout", pct: 0 },
-            { id: 58, name: "Site 5 Rollout", parent: 57, depType: "FS", start: "2026-04-01", dur: 2, type: "rollout", pct: 0 },
-            { id: 59, name: "Site 6 Rollout", parent: 58, depType: "FS", start: "2026-04-03", dur: 2, type: "rollout", pct: 0 },
-            { id: 60, name: "Site 7 Rollout", parent: 59, depType: "FS", start: "2026-04-07", dur: 2, type: "rollout", pct: 0 },
-            { id: 61, name: "Site 8 Rollout", parent: 60, depType: "FS", start: "2026-04-09", dur: 2, type: "rollout", pct: 0 },
-            { id: 62, name: "Site 9 Rollout", parent: 61, depType: "FS", start: "2026-04-13", dur: 2, type: "rollout", pct: 0 },
-            { id: 63, name: "Site 10 Rollout", parent: 62, depType: "FS", start: "2026-04-15", dur: 2, type: "rollout", pct: 0 },
-            { id: 64, name: "Site 11 Rollout", parent: 63, depType: "FS", start: "2026-04-17", dur: 2, type: "rollout", pct: 0 },
-            { id: 65, name: "Site 12 Rollout", parent: 64, depType: "FS", start: "2026-04-21", dur: 2, type: "rollout", pct: 0 },
-            { id: 66, name: "Site 13 Rollout", parent: 65, depType: "FS", start: "2026-04-23", dur: 2, type: "rollout", pct: 0 },
-            { id: 67, name: "Site 14 Rollout", parent: 66, depType: "FS", start: "2026-04-27", dur: 2, type: "rollout", pct: 0 },
-            { id: 68, name: "EnvisionDX Access", parent: 49, depType: "FS", start: "2026-03-06", dur: 1, type: "admin", pct: 0 },
-            { id: 69, name: "Service Reviews", parent: 49, depType: "FS", start: "2026-03-06", dur: 1, type: "admin", pct: 0 },
-            { id: 71, name: "Lessons Learned", parent: 67, depType: "FS", start: "2026-04-29", dur: 3, type: "admin", pct: 0 },
-            { id: 72, name: "Project Closed", parent: 71, depType: "FS", start: "2026-05-04", dur: 2, type: "gate", pct: 0 }
+            { id: 1, name: "Project Plan Root", parent: null, depType: "FS", start: "2026-01-08", dur: 0, type: "Milestone", pct: 100 },
+            { id: 3, name: "Contract & PO Signed", parent: 1, depType: "FS", start: "2026-01-08", dur: 0, type: "Milestone", pct: 100 },
+            { id: 4, name: "Gate 1: Kick Off", parent: 1, depType: "FS", start: "2026-02-04", dur: 0, type: "Milestone", pct: 100 },
+            { id: 5, name: "Gate 2: Discovery", parent: 4, depType: "FS", start: "2026-03-10", dur: 0, type: "Milestone", pct: 20 },
+            { id: 6, name: "Gate 3: Pilot", parent: 5, depType: "FS", start: "2026-03-20", dur: 0, type: "Milestone", pct: 0 },
+            { id: 7, name: "Gate 4: Rollout", parent: 6, depType: "FS", start: "2026-04-27", dur: 0, type: "Milestone", pct: 0 },
+            { id: 8, name: "Gate 5: Closure", parent: 7, depType: "FS", start: "2026-05-04", dur: 0, type: "Milestone", pct: 0 },
+            { id: 10, name: "Confirm Final Design", parent: 1, depType: "FS", start: "2026-01-09", dur: 3, type: "Task", pct: 100 },
+            { id: 11, name: "Prepare SSD & Cabling", parent: 10, depType: "FS", start: "2026-01-14", dur: 2, type: "Task", pct: 100 },
+            { id: 12, name: "Enter Orders (GTT)", parent: 10, depType: "FS", start: "2026-01-14", dur: 10, type: "Task", pct: 90 },
+            { id: 13, name: "MSA Signature", parent: 10, depType: "FS", start: "2026-01-14", dur: 12, type: "Task", pct: 80 },
+            { id: 14, name: "PON Re-signing", parent: 12, depType: "FS", start: "2026-01-28", dur: 5, type: "Task", pct: 50 },
+            { id: 15, name: "Orders Validated", parent: 14, depType: "FS", start: "2026-02-04", dur: 2, type: "Task", pct: 0 },
+            { id: 16, name: "EnvisionEdge Cert", parent: 1, depType: "FS", start: "2026-01-09", dur: 6, type: "Task", pct: 100 },
+            { id: 18, name: "Internal Acceptance", parent: 15, depType: "FS", start: "2026-02-06", dur: 3, type: "Task", pct: 0 },
+            { id: 19, name: "PON Validation", parent: 18, depType: "FS", start: "2026-02-11", dur: 1, type: "Task", pct: 0 },
+            { id: 20, name: "External Kick Off", parent: 19, depType: "FS", start: "2026-02-12", dur: 2, type: "Task", pct: 0 },
+            { id: 21, name: "PID Agreed", parent: 20, depType: "FS", start: "2026-02-16", dur: 2, type: "Task", pct: 0 },
+            { id: 22, name: "Plan Created", parent: 16, depType: "FS", start: "2026-01-19", dur: 2, type: "Task", pct: 100 },
+            { id: 23, name: "Tracker Created", parent: 16, depType: "FS", start: "2026-01-19", dur: 2, type: "Task", pct: 100 },
+            { id: 24, name: "RAID Log Created", parent: 16, depType: "FS", start: "2026-01-19", dur: 2, type: "Task", pct: 100 },
+            { id: 26, name: "Share SSD/HLD", parent: 16, depType: "FS", start: "2026-01-19", dur: 8, type: "Task", pct: 60 },
+            { id: 27, name: "Share TAD", parent: 15, depType: "FS", start: "2026-02-06", dur: 2, type: "Task", pct: 0 },
+            { id: 28, name: "Update IP Addresses", parent: 12, depType: "FS", start: "2026-01-28", dur: 1, type: "Task", pct: 0 },
+            { id: 30, name: "TAD Approved", parent: 27, depType: "FS", start: "2026-02-10", dur: 2, type: "Task", pct: 0 },
+            { id: 31, name: "Schedule Workshops", parent: 27, depType: "FS", start: "2026-02-10", dur: 2, type: "Task", pct: 0 },
+            { id: 32, name: "Config Review (Workshops)", parent: 27, depType: "FS", start: "2026-02-10", dur: 20, type: "Task", pct: 0 },
+            { id: 33, name: "Agree Solution", parent: 32, depType: "FS", start: "2026-03-10", dur: 5, type: "Task", pct: 0 },
+            { id: 34, name: "Client Tech Info", parent: 28, depType: "FS", start: "2026-01-29", dur: 15, type: "Task", pct: 10 },
+            { id: 36, name: "NetProv Confirm", parent: 15, depType: "FS", start: "2026-02-06", dur: 0, type: "Milestone", pct: 0 },
+            { id: 37, name: "Pilot Pre-stage", parent: 28, depType: "FS", start: "2026-01-29", dur: 6, type: "Task", pct: 20 },
+            { id: 38, name: "Pilot Shipment", parent: 37, depType: "FS", start: "2026-02-06", dur: 15, type: "Task", pct: 0 },
+            { id: 39, name: "Rollout Pre-stage", parent: 27, depType: "FS", start: "2026-02-10", dur: 10, type: "Task", pct: 0 },
+            { id: 40, name: "Rollout Shipment", parent: 39, depType: "FS", start: "2026-02-24", dur: 15, type: "Task", pct: 0 },
+            { id: 42, name: "Identify Pilot Sites", parent: 21, depType: "FS", start: "2026-02-18", dur: 1, type: "Task", pct: 0 },
+            { id: 43, name: "Final Workshop", parent: 38, depType: "FS", start: "2026-02-27", dur: 3, type: "Task", pct: 0 },
+            { id: 44, name: "Final LLDs", parent: 43, depType: "FS", start: "2026-03-04", dur: 1, type: "Task", pct: 0 },
+            { id: 45, name: "Define Success Scope", parent: 33, depType: "FS", start: "2026-03-17", dur: 5, type: "Task", pct: 0 },
+            { id: 46, name: "Determine UAT", parent: 33, depType: "FS", start: "2026-03-17", dur: 5, type: "Task", pct: 0 },
+            { id: 47, name: "Create Runbook", parent: 43, depType: "FS", start: "2026-03-04", dur: 1, type: "Task", pct: 0 },
+            { id: 49, name: "Site 1 Mig", parent: 44, depType: "FS", start: "2026-03-05", dur: 1, type: "Task", pct: 0 },
+            { id: 50, name: "Site 2 Mig", parent: 49, depType: "FS", start: "2026-03-06", dur: 2, type: "Task", pct: 0 },
+            { id: 51, name: "Site 3 Mig", parent: 50, depType: "FS", start: "2026-03-10", dur: 2, type: "Task", pct: 0 },
+            { id: 52, name: "Design Signed", parent: 51, depType: "FS", start: "2026-03-12", dur: 5, type: "Task", pct: 0 },
+            { id: 53, name: "Create DDD", parent: 52, depType: "FS", start: "2026-03-19", dur: 1, type: "Task", pct: 0 },
+            { id: 54, name: "Handover Net Prov", parent: 53, depType: "FS", start: "2026-03-20", dur: 1, type: "Task", pct: 0 },
+            { id: 56, name: "Site 3 Rollout", parent: 54, depType: "FS", start: "2026-03-23", dur: 5, type: "Task", pct: 0 },
+            { id: 57, name: "Site 4 Rollout", parent: 56, depType: "FS", start: "2026-03-30", dur: 2, type: "Task", pct: 0 },
+            { id: 58, name: "Site 5 Rollout", parent: 57, depType: "FS", start: "2026-04-01", dur: 2, type: "Task", pct: 0 },
+            { id: 59, name: "Site 6 Rollout", parent: 58, depType: "FS", start: "2026-04-03", dur: 2, type: "Task", pct: 0 },
+            { id: 60, name: "Site 7 Rollout", parent: 59, depType: "FS", start: "2026-04-07", dur: 2, type: "Task", pct: 0 },
+            { id: 61, name: "Site 8 Rollout", parent: 60, depType: "FS", start: "2026-04-09", dur: 2, type: "Task", pct: 0 },
+            { id: 62, name: "Site 9 Rollout", parent: 61, depType: "FS", start: "2026-04-13", dur: 2, type: "Task", pct: 0 },
+            { id: 63, name: "Site 10 Rollout", parent: 62, depType: "FS", start: "2026-04-15", dur: 2, type: "Task", pct: 0 },
+            { id: 64, name: "Site 11 Rollout", parent: 63, depType: "FS", start: "2026-04-17", dur: 2, type: "Task", pct: 0 },
+            { id: 65, name: "Site 12 Rollout", parent: 64, depType: "FS", start: "2026-04-21", dur: 2, type: "Task", pct: 0 },
+            { id: 66, name: "Site 13 Rollout", parent: 65, depType: "FS", start: "2026-04-23", dur: 2, type: "Task", pct: 0 },
+            { id: 67, name: "Site 14 Rollout", parent: 66, depType: "FS", start: "2026-04-27", dur: 2, type: "Task", pct: 0 },
+            { id: 68, name: "EnvisionDX Access", parent: 49, depType: "FS", start: "2026-03-06", dur: 1, type: "Task", pct: 0 },
+            { id: 69, name: "Service Reviews", parent: 49, depType: "FS", start: "2026-03-06", dur: 1, type: "Task", pct: 0 },
+            { id: 71, name: "Lessons Learned", parent: 67, depType: "FS", start: "2026-04-29", dur: 3, type: "Task", pct: 0 },
+            { id: 72, name: "Project Closed", parent: 71, depType: "FS", start: "2026-05-04", dur: 0, type: "Milestone", pct: 0 }
         ];
 
-        // --- 2. LOGIC: CRITICAL PATH & BASELINE ---
+        // --- 2. LOGIC ---
         const criticalPathSet = new Set();
         let showBaseline = true;
 
@@ -307,7 +332,7 @@
             projectData.forEach(t => {
                 if (!t.baseStart) t.baseStart = t.start;
                 if (!t.baseDur) t.baseDur = t.dur;
-                if (!t.depType) t.depType = "FS"; // Default
+                if (!t.depType) t.depType = "FS"; 
             });
         }
 
@@ -316,7 +341,6 @@
             if (projectData.length === 0) return;
             const maxId = Math.max(...projectData.map(t => t.id));
             let currentId = maxId;
-            
             while (currentId) {
                 criticalPathSet.add(currentId);
                 const task = projectData.find(t => t.id === currentId);
@@ -324,32 +348,22 @@
             }
         }
 
-        // --- SCHEDULING ENGINE ---
         function calculateSchedule() {
-            // Sort by ID to ensure parent processed before child
             const sortedTasks = [...projectData].sort((a, b) => a.id - b.id);
-            
             sortedTasks.forEach(task => {
                 if (task.parent) {
                     const parent = projectData.find(p => p.id === task.parent);
                     if (parent) {
                         const pStart = new Date(parent.start);
                         const pEnd = new Date(pStart.getTime() + (parent.dur * 86400000));
-                        
                         let newStart;
-                        // Dependency Logic
                         switch(task.depType) {
                             case 'SS': newStart = pStart; break;
                             case 'FF': newStart = new Date(pEnd.getTime() - (task.dur * 86400000)); break;
                             case 'SF': newStart = new Date(pStart.getTime() - (task.dur * 86400000)); break;
                             case 'FS': default: newStart = pEnd; break;
                         }
-                        
-                        // Safety Check for Invalid Dates
-                        if (isNaN(newStart.getTime())) {
-                            newStart = new Date(parent.start); // Fallback
-                        }
-                        
+                        if (isNaN(newStart.getTime())) newStart = new Date(parent.start);
                         task.start = newStart.toISOString().split('T')[0];
                     }
                 }
@@ -357,11 +371,8 @@
         }
 
         function setBaseline() {
-            if(confirm("Overwrite Baseline with Current Schedule?")) {
-                projectData.forEach(t => {
-                    t.baseStart = t.start;
-                    t.baseDur = t.dur;
-                });
+            if(confirm("Overwrite Baseline?")) {
+                projectData.forEach(t => { t.baseStart = t.start; t.baseDur = t.dur; });
                 renderChart();
             }
         }
@@ -371,33 +382,36 @@
             renderChart();
         }
 
-        // --- EXPORT / IMPORT LOGIC ---
-        function downloadCSV() {
-            const headers = ["ID", "Name", "Type", "Parent", "DepType", "Duration", "Start", "Percent", "BaseStart", "BaseDur"];
-            const rows = projectData.map(t => [
-                t.id,
-                `"${t.name.replace(/"/g, '""')}"`, // Escape quotes
-                t.type,
-                t.parent || '',
-                t.depType || 'FS',
-                t.dur,
-                t.start,
-                t.pct,
-                t.baseStart || t.start,
-                t.baseDur || t.dur
-            ]);
-            
-            const csvContent = [
-                headers.join(","),
-                ...rows.map(r => r.join(","))
-            ].join("\n");
+        function toggleDurationState() {
+            const type = document.getElementById('m-type').value;
+            const durInput = document.getElementById('m-dur');
+            if (type === 'Milestone') {
+                durInput.value = 0;
+                durInput.disabled = true;
+                durInput.classList.add('bg-slate-100', 'text-slate-400');
+            } else {
+                durInput.disabled = false;
+                durInput.classList.remove('bg-slate-100', 'text-slate-400');
+            }
+        }
 
+        // --- IMPORT/EXPORT ---
+        function downloadCSV() {
+            const headers = ["ID", "Name", "Type", "Parent", "DepType", "Duration", "Start", "Finish", "Percent", "BaseStart", "BaseDur"];
+            const rows = projectData.map(t => {
+                const startDate = new Date(t.start);
+                const endDate = new Date(startDate.getTime() + (t.dur * 86400000));
+                return [
+                    t.id, `"${t.name.replace(/"/g, '""')}"`, t.type, t.parent || '', t.depType || 'FS',
+                    t.dur, t.start, endDate.toISOString().split('T')[0], t.pct, t.baseStart || t.start, t.baseDur || t.dur
+                ];
+            });
+            const csvContent = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
             const url = URL.createObjectURL(blob);
             link.setAttribute("href", url);
-            link.setAttribute("download", "sdwan_project_plan.csv");
-            link.style.visibility = 'hidden';
+            link.setAttribute("download", "sdwan_project.csv");
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -406,143 +420,84 @@
         function importCSV(input) {
             const file = input.files[0];
             if (!file) return;
-
             const reader = new FileReader();
             reader.onload = function(e) {
-                const text = e.target.result;
-                const lines = text.split('\n');
-                
-                // Skip header, process rows
+                const lines = e.target.result.split('\n');
                 const newProjectData = [];
                 for (let i = 1; i < lines.length; i++) {
                     if (!lines[i].trim()) continue;
-                    
-                    // Simple CSV parser (handles quotes roughly)
                     const cols = lines[i].match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || lines[i].split(',');
-                    // Cleanup quotes
                     const clean = cols.map(c => c.replace(/^"|"$/g, '').replace(/""/g, '"'));
-                    
-                    if (clean.length >= 8) {
+                    if (clean.length >= 9) {
                         newProjectData.push({
-                            id: parseInt(clean[0]),
-                            name: clean[1],
-                            type: clean[2],
-                            parent: clean[3] ? parseInt(clean[3]) : null,
-                            depType: clean[4] || 'FS',
-                            dur: parseInt(clean[5]),
-                            start: clean[6],
-                            pct: parseInt(clean[7]),
-                            baseStart: clean[8] || clean[6], // Load baseline or fallback
-                            baseDur: parseInt(clean[9]) || parseInt(clean[5])
+                            id: parseInt(clean[0]), name: clean[1], type: clean[2], parent: clean[3] ? parseInt(clean[3]) : null,
+                            depType: clean[4] || 'FS', dur: parseInt(clean[5]), start: clean[6], pct: parseInt(clean[8]),
+                            baseStart: clean[9] || clean[6], baseDur: parseInt(clean[10]) || parseInt(clean[5])
                         });
                     }
                 }
-
                 if (newProjectData.length > 0) {
                     projectData = newProjectData;
                     refreshView();
-                    alert("Project loaded successfully!");
-                } else {
-                    alert("Could not parse CSV.");
+                    alert("Project loaded!");
                 }
             };
             reader.readAsText(file);
-            input.value = ''; // Reset input
+            input.value = '';
         }
 
-        // --- 3. MODAL & EDIT LOGIC ---
+        // --- REPORTING ---
+        function openReportModal() {
+            document.getElementById('report-text').value = "";
+            document.getElementById('reportModal').classList.remove('hidden');
+        }
+
+        function closeReportModal() {
+            document.getElementById('reportModal').classList.add('hidden');
+        }
+
+        function saveReport() {
+            const text = document.getElementById('report-text').value;
+            if(!text.trim()) { alert("Please enter a description."); return; }
+            
+            const timestamp = new Date().toISOString();
+            const headers = ["Timestamp", "Type", "Description"];
+            const row = [timestamp, "User Report/Request", `"${text.replace(/"/g, '""')}"`];
+            const csvContent = [headers.join(","), row.join(",")].join("\n");
+            
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            const filename = `report_dorin_${new Date().toISOString().slice(0,10)}.csv`;
+            link.setAttribute("download", filename);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            closeReportModal();
+            alert("Report downloaded! Please send to Dorin.");
+        }
+
+        // --- MODAL ---
         let editingId = null;
-
-        window.addEventListener('load', () => {
-            initData();
-            calculateSchedule();
-            calculateCriticalPath();
-            renderTable();
-            renderChart();
-            updateCount();
-            
-            // Auto Date Logic in Modal
-            const mStart = document.getElementById('m-start');
-            const mDur = document.getElementById('m-dur');
-            const mFinish = document.getElementById('m-finish');
-
-            function updateFinish() {
-                if(mStart.value) {
-                    const start = new Date(mStart.value);
-                    const days = parseInt(mDur.value) || 0;
-                    const end = new Date(start.getTime() + (days * 86400000));
-                    mFinish.value = end.toISOString().split('T')[0];
-                }
-            }
-
-            function updateDuration() {
-                if(mStart.value && mFinish.value) {
-                    const start = new Date(mStart.value);
-                    const end = new Date(mFinish.value);
-                    const diffTime = Math.abs(end - start);
-                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                    mDur.value = diffDays;
-                }
-            }
-
-            mStart.addEventListener('change', updateFinish);
-            mDur.addEventListener('input', updateFinish);
-            mFinish.addEventListener('change', updateDuration);
-            
-            // Sync Scrolling
-            const grid = document.getElementById('grid-scroll');
-            const chart = document.getElementById('chart-scroll');
-            let isSyncingLeft = false;
-            let isSyncingRight = false;
-
-            grid.addEventListener('scroll', function(e) {
-                if (!isSyncingLeft) {
-                    isSyncingRight = true;
-                    chart.scrollTop = this.scrollTop;
-                }
-                isSyncingLeft = false;
-            });
-
-            chart.addEventListener('scroll', function(e) {
-                if (!isSyncingRight) {
-                    isSyncingLeft = true;
-                    grid.scrollTop = this.scrollTop;
-                }
-                isSyncingRight = false;
-            });
-        });
 
         function openTaskModal(id = null) {
             try {
                 const modal = document.getElementById('taskModal');
-                const title = document.getElementById('modalTitle');
-                const insertDiv = document.getElementById('div-insert');
                 const insertSelect = document.getElementById('m-insert');
-                
-                // Safety check
-                if (!modal) { alert("Error: Modal not found."); return; }
-
-                // Populate Select
                 insertSelect.innerHTML = '<option value="end">-- End of List --</option>';
                 projectData.forEach((t, idx) => {
                     const opt = document.createElement('option');
                     opt.value = idx;
-                    // Safely handle task name string
-                    const safeName = (t.name || "Task").substring(0,30);
-                    opt.text = `After: [${t.id}] ${safeName}...`;
+                    opt.text = `After: [${t.id}] ${t.name.substring(0,30)}...`;
                     insertSelect.appendChild(opt);
                 });
 
                 editingId = id;
-
                 if (id) {
-                    // EDIT MODE
-                    title.innerText = "Edit Task Details";
-                    insertDiv.classList.add('hidden');
-                    
+                    document.getElementById('modalTitle').innerText = "Edit Task";
+                    document.getElementById('div-insert').classList.add('hidden');
                     const task = projectData.find(t => t.id === id);
-                    if (!task) return;
-
                     document.getElementById('m-name').value = task.name;
                     document.getElementById('m-type').value = task.type;
                     document.getElementById('m-parent').value = task.parent || '';
@@ -550,209 +505,105 @@
                     document.getElementById('m-start').value = task.start;
                     document.getElementById('m-dur').value = task.dur;
                     document.getElementById('m-pct').value = task.pct;
-                    
-                    // Calc finish
-                    const start = new Date(task.start);
-                    const end = new Date(start.getTime() + (task.dur * 86400000));
-                    document.getElementById('m-finish').value = end.toISOString().split('T')[0];
-
                 } else {
-                    // ADD NEW TASK MODE
-                    title.innerText = "Add New Task";
-                    insertDiv.classList.remove('hidden');
-                    
-                    // RESET ALL FIELDS
+                    document.getElementById('modalTitle').innerText = "Add New Task";
+                    document.getElementById('div-insert').classList.remove('hidden');
                     document.getElementById('m-name').value = "";
-                    document.getElementById('m-type').value = "design";
+                    document.getElementById('m-type').value = "Task";
                     document.getElementById('m-parent').value = "";
                     document.getElementById('m-depType').value = "FS"; 
-                    document.getElementById('m-start').value = "2026-01-08";
+                    document.getElementById('m-start').value = new Date().toISOString().split('T')[0];
                     document.getElementById('m-dur').value = "1";
                     document.getElementById('m-pct').value = "0";
-                    
-                    const s = new Date("2026-01-08");
-                    const e = new Date(s.getTime() + 86400000);
-                    document.getElementById('m-finish').value = e.toISOString().split('T')[0];
                 }
-                
+                toggleDurationState();
                 modal.classList.remove('hidden');
-            } catch (err) {
-                console.error(err);
-                alert("An error occurred opening the task window.");
-            }
+            } catch (err) { console.error(err); alert("Error opening modal"); }
         }
 
-        function closeModal() {
-            document.getElementById('taskModal').classList.add('hidden');
-        }
+        function closeModal() { document.getElementById('taskModal').classList.add('hidden'); }
 
         function saveTask() {
             try {
                 const name = document.getElementById('m-name').value || "New Task";
                 const type = document.getElementById('m-type').value;
-                const dur = parseInt(document.getElementById('m-dur').value) || 0;
-                const startVal = document.getElementById('m-start').value;
-                // Validate Start Date
-                const start = startVal ? startVal : new Date().toISOString().split('T')[0]; 
+                let dur = parseInt(document.getElementById('m-dur').value) || 0;
+                if (type === 'Milestone') dur = 0; // Enforce
+                
+                const start = document.getElementById('m-start').value || new Date().toISOString().split('T')[0];
                 const pct = parseInt(document.getElementById('m-pct').value) || 0;
-                const parentInput = document.getElementById('m-parent').value;
-                const parent = parentInput ? parseInt(parentInput) : null;
+                const parent = parseInt(document.getElementById('m-parent').value) || null;
                 const depType = document.getElementById('m-depType').value;
 
                 if (editingId) {
                     const task = projectData.find(t => t.id === editingId);
-                    if (task) {
-                        task.name = name;
-                        task.type = type;
-                        task.dur = dur;
-                        task.start = start;
-                        task.pct = pct;
-                        task.parent = parent;
-                        task.depType = depType;
-                    }
+                    if (task) Object.assign(task, { name, type, dur, start, pct, parent, depType });
                 } else {
                     const maxId = projectData.length > 0 ? Math.max(...projectData.map(t => t.id)) : 0;
                     const newId = maxId + 1;
                     const insertVal = document.getElementById('m-insert').value;
-                    
-                    const newTask = {
-                        id: newId, name, type, dur, start, pct, parent, depType,
-                        baseStart: start, baseDur: dur
-                    };
-
-                    if (insertVal === "end") {
-                        projectData.push(newTask);
-                    } else {
-                        const index = parseInt(insertVal);
-                        projectData.splice(index + 1, 0, newTask);
-                    }
+                    const newTask = { id: newId, name, type, dur, start, pct, parent, depType, baseStart: start, baseDur: dur };
+                    if (insertVal === "end") projectData.push(newTask);
+                    else projectData.splice(parseInt(insertVal) + 1, 0, newTask);
                 }
-
                 refreshView();
                 closeModal();
-            } catch(err) {
-                console.error(err);
-                alert("Failed to save task. Check inputs.");
-            }
+            } catch(err) { console.error(err); alert("Error saving task"); }
         }
 
         function deleteTask(id) {
-            if(confirm(`Are you sure you want to delete Task ID ${id}?`)) {
-                const index = projectData.findIndex(t => t.id === id);
-                if (index > -1) {
-                    projectData.splice(index, 1);
-                    refreshView();
-                }
+            if(confirm("Delete Task?")) {
+                const idx = projectData.findIndex(t => t.id === id);
+                if (idx > -1) { projectData.splice(idx, 1); refreshView(); }
             }
         }
+
+        // --- INIT & RENDER ---
+        window.addEventListener('load', () => {
+            initData();
+            refreshView();
+            
+            // Sync Scroll
+            const grid = document.getElementById('grid-scroll');
+            const chart = document.getElementById('chart-scroll');
+            let isSyncingLeft = false; 
+            let isSyncingRight = false;
+            grid.onscroll = function() { if (!isSyncingLeft) { isSyncingRight = true; chart.scrollTop = this.scrollTop; } isSyncingLeft = false; };
+            chart.onscroll = function() { if (!isSyncingRight) { isSyncingLeft = true; grid.scrollTop = this.scrollTop; } isSyncingRight = false; };
+        });
 
         function refreshView() {
             calculateSchedule();
             calculateCriticalPath();
             renderTable();
             renderChart();
-            updateCount();
+            document.getElementById('task-count').innerText = projectData.length;
         }
-
-        function updateCount() {
-            const countEl = document.getElementById('task-count');
-            if(countEl) countEl.innerText = projectData.length;
-        }
-
-        // --- INLINE EDITING LOGIC ---
-        function makeEditable(cell, id, field) {
-            if (cell.querySelector('input') || cell.classList.contains('editing')) return;
-
-            const task = projectData.find(t => t.id === id);
-            if (!task) return;
-
-            const currentValue = task[field];
-            cell.classList.add('editing');
-
-            let inputHTML = '';
-            
-            if (field === 'finish') {
-                const start = new Date(task.start);
-                const end = new Date(start.getTime() + (task.dur * 86400000));
-                const val = end.toISOString().split('T')[0];
-                inputHTML = `<input type="date" value="${val}" onblur="commitEdit(${id}, '${field}', this.value)" onkeydown="if(event.key==='Enter') this.blur()">`;
-            } else if (field === 'start') {
-                inputHTML = `<input type="date" value="${currentValue}" onblur="commitEdit(${id}, '${field}', this.value)" onkeydown="if(event.key==='Enter') this.blur()">`;
-            } else if (field === 'dur' || field === 'pct' || field === 'parent') {
-                inputHTML = `<input type="number" value="${currentValue}" onblur="commitEdit(${id}, '${field}', this.value)" onkeydown="if(event.key==='Enter') this.blur()">`;
-            } else if (field === 'depType') {
-                inputHTML = `<select onblur="commitEdit(${id}, '${field}', this.value)" class="w-full text-xs bg-slate-100">
-                    <option value="FS" ${currentValue==='FS'?'selected':''}>FS</option>
-                    <option value="SS" ${currentValue==='SS'?'selected':''}>SS</option>
-                    <option value="FF" ${currentValue==='FF'?'selected':''}>FF</option>
-                    <option value="SF" ${currentValue==='SF'?'selected':''}>SF</option>
-                </select>`;
-            } else { 
-                inputHTML = `<input type="text" value="${currentValue}" onblur="commitEdit(${id}, '${field}', this.value)" onkeydown="if(event.key==='Enter') this.blur()">`;
-            }
-
-            cell.innerHTML = inputHTML;
-            const input = cell.querySelector('input, select');
-            if(input) input.focus();
-        }
-
-        function commitEdit(id, field, value) {
-            const task = projectData.find(t => t.id === id);
-            if (!task) return;
-
-            if (field === 'dur') task.dur = parseInt(value) || 0;
-            else if (field === 'pct') task.pct = Math.min(100, Math.max(0, parseInt(value) || 0));
-            else if (field === 'parent') task.parent = value ? parseInt(value) : null;
-            else if (field === 'depType') task.depType = value;
-            else if (field === 'start') {
-                task.start = value;
-            } else if (field === 'finish') {
-                const start = new Date(task.start);
-                const end = new Date(value);
-                const diffTime = Math.abs(end - start);
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                task.dur = diffDays;
-            } else {
-                task[field] = value;
-            }
-
-            refreshView();
-        }
-
-        // --- 4. RENDERING ---
-        let chartInstance = null;
 
         function renderTable() {
             const tbody = document.getElementById('grid-body');
             tbody.innerHTML = '';
-            
             projectData.forEach(task => {
-                const startDate = new Date(task.start);
-                const endDate = new Date(startDate.getTime() + (task.dur * 86400000));
-                const endStr = endDate.toISOString().split('T')[0];
-                
+                const endStr = new Date(new Date(task.start).getTime() + (task.dur * 86400000)).toISOString().split('T')[0];
                 const row = document.createElement('tr');
                 row.className = 'gantt-row hover:bg-slate-50 transition-colors group';
                 
-                let pctColor = 'bg-slate-300';
-                if(task.pct > 0) pctColor = 'bg-amber-500';
-                if(task.pct === 100) pctColor = 'bg-emerald-500';
+                const typeBadge = task.type === 'Milestone' 
+                    ? `<span class="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase border border-purple-200 text-purple-600 bg-purple-50">Milestone</span>`
+                    : `<span class="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase border border-slate-200 text-slate-500">Task</span>`;
 
                 row.innerHTML = `
                     <td class="font-mono text-xs text-slate-400 font-bold text-center border-r border-slate-100">${task.id}</td>
-                    <td class="border-r border-slate-100 relative editable" onclick="makeEditable(this, ${task.id}, 'name')">
-                        <div class="truncate-text font-medium text-slate-700 text-xs" title="${task.name}">${task.name}</div>
+                    <td class="border-r border-slate-100 relative editable" onclick="openTaskModal(${task.id})">
+                        <div class="truncate-text font-medium text-slate-700 text-xs">${task.name}</div>
                     </td>
-                    <td class="text-center font-mono text-xs text-slate-500 border-r border-slate-100 editable" onclick="makeEditable(this, ${task.id}, 'parent')">${task.parent || '-'}</td>
-                    <td class="text-center font-mono text-xs text-slate-500 border-r border-slate-100 editable" onclick="makeEditable(this, ${task.id}, 'depType')">${task.depType || 'FS'}</td>
-                    <td class="text-center font-mono text-xs text-slate-500 border-r border-slate-100 editable" onclick="makeEditable(this, ${task.id}, 'dur')">${task.dur}d</td>
-                    <td class="font-mono text-[10px] text-slate-500 border-r border-slate-100 editable" onclick="makeEditable(this, ${task.id}, 'start')">${task.start}</td>
-                    <td class="font-mono text-[10px] text-slate-500 border-r border-slate-100 editable" onclick="makeEditable(this, ${task.id}, 'finish')">${endStr}</td>
-                    <td class="text-center border-r border-slate-100 editable" onclick="makeEditable(this, ${task.id}, 'pct')">
+                    <td class="text-center font-mono text-xs text-slate-500 border-r border-slate-100">${task.parent || '-'}</td>
+                    <td class="text-center border-r border-slate-100">${typeBadge}</td>
+                    <td class="text-center font-mono text-xs text-slate-500 border-r border-slate-100">${task.dur}d</td>
+                    <td class="font-mono text-[10px] text-slate-500 border-r border-slate-100">${task.start}</td>
+                    <td class="font-mono text-[10px] text-slate-500 border-r border-slate-100">${endStr}</td>
+                    <td class="text-center border-r border-slate-100">
                         <div class="flex items-center justify-center gap-1">
-                            <div class="w-6 h-1 rounded-full bg-slate-100 overflow-hidden">
-                                <div class="h-full ${pctColor}" style="width: ${task.pct}%"></div>
-                            </div>
                             <span class="text-[9px] font-bold text-slate-400">${task.pct}%</span>
                         </div>
                     </td>
@@ -765,19 +616,13 @@
             });
         }
 
+        let chartInstance = null;
         function renderChart() {
-            const ROW_HEIGHT = 40;
-            const HEADER_HEIGHT = 48;
-            const totalHeight = (projectData.length * ROW_HEIGHT) + HEADER_HEIGHT;
-            
-            const container = document.getElementById('chart-container');
-            container.style.height = `${totalHeight}px`;
-
+            const ROW_HEIGHT = 40; const HEADER_HEIGHT = 48;
+            document.getElementById('chart-container').style.height = `${(projectData.length * ROW_HEIGHT) + HEADER_HEIGHT}px`;
             const ctx = document.getElementById('ganttCanvas').getContext('2d');
-
             if (chartInstance) chartInstance.destroy();
 
-            // Dataset 0: Baseline
             const baselineData = projectData.map(t => {
                 if(!showBaseline) return { x: null, y: `Row ${t.id}` };
                 const s = new Date(t.baseStart);
@@ -785,56 +630,54 @@
                 return { x: [s.getTime(), e.getTime()], y: `Row ${t.id}` };
             });
 
-            // Dataset 1: Actual
             const actualData = projectData.map(t => {
                 const s = new Date(t.start);
-                const e = new Date(s.getTime() + ((t.dur || 0.5) * 86400000));
+                // Give milestones a minimal "data" width for coordinates, but they will be transparent
+                const displayDur = t.type === 'Milestone' ? 0.5 : t.dur;
+                const e = new Date(s.getTime() + (displayDur * 86400000));
                 return { x: [s.getTime(), e.getTime()], y: `Row ${t.id}`, status: t.pct };
             });
-
-            const yLabels = projectData.map((_, i) => `Row ${projectData[i].id}`);
 
             chartInstance = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: yLabels,
+                    labels: projectData.map((_, i) => `Row ${projectData[i].id}`),
                     datasets: [
                         { label: 'Baseline', data: baselineData, backgroundColor: '#94A3B8', barThickness: 4, grouped: false, order: 1 },
-                        { label: 'Actual', data: actualData, backgroundColor: (ctx) => { const pct = ctx.raw?.status; if(pct === 100) return '#10B981'; if(pct > 0) return '#F59E0B'; return '#CBD5E1'; }, borderRadius: 3, barPercentage: 0.6, grouped: false, order: 0 }
+                        { label: 'Actual', data: actualData, backgroundColor: (ctx) => {
+                            const dataIndex = ctx.dataIndex;
+                            if (dataIndex === undefined || dataIndex < 0) return '#CBD5E1';
+                            const task = projectData[dataIndex];
+                            if (task.type === 'Milestone') return 'rgba(0,0,0,0)'; // Transparent bar for milestones
+                            
+                            const pct = ctx.raw?.status;
+                            if(pct === 100) return '#10B981'; if(pct > 0) return '#F59E0B'; return '#CBD5E1';
+                        }, borderRadius: 3, barPercentage: 0.6, grouped: false, order: 0 }
                     ]
                 },
                 options: {
-                    indexAxis: 'y',
-                    responsive: true,
-                    maintainAspectRatio: false,
+                    indexAxis: 'y', responsive: true, maintainAspectRatio: false,
                     layout: { padding: { top: 0, bottom: 0, left: 0, right: 20 } },
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: { enabled: true }
-                    },
+                    plugins: { legend: { display: false }, tooltip: { enabled: true } },
                     scales: {
                         x: { type: 'time', time: { unit: 'week' }, position: 'top', min: '2026-01-08', grid: { color: '#F1F5F9' }, ticks: { font: { size: 10 }, color: '#94A3B8' } },
                         y: { display: false, grid: { display: false } }
                     }
                 },
                 plugins: [{
-                    id: 'dependencyArrows',
+                    id: 'customRender',
                     afterDatasetsDraw(chart) {
                         const { ctx } = chart;
-                        const meta = chart.getDatasetMeta(1);
-                        const idToIndex = {};
-                        projectData.forEach((t, i) => idToIndex[t.id] = i);
-
-                        ctx.save();
-                        ctx.lineJoin = 'round';
-                        ctx.lineCap = 'round';
-
+                        const meta = chart.getDatasetMeta(1); // Actual dataset
+                        
+                        // 1. Draw Dependencies
+                        const idToIndex = {}; projectData.forEach((t, i) => idToIndex[t.id] = i);
+                        ctx.save(); ctx.lineJoin = 'round'; ctx.lineCap = 'round';
                         projectData.forEach((task, index) => {
                             if (task.parent && idToIndex[task.parent] !== undefined) {
                                 const pIdx = idToIndex[task.parent];
                                 const pBar = meta.data[pIdx];
                                 const cBar = meta.data[index];
-
                                 if (!pBar || !cBar) return;
 
                                 const isCrit = criticalPathSet.has(task.id) && criticalPathSet.has(task.parent);
@@ -842,37 +685,33 @@
                                 ctx.lineWidth = isCrit ? 2.5 : 1.5;
                                 if (!isCrit) ctx.setLineDash([]);
 
-                                // --- ARROW DRAWING LOGIC FOR FS, SS, FF, SF ---
-                                let startX, startY, endX, endY;
-                                
-                                const pLeft = pBar.base;
-                                const pRight = pBar.x;
-                                const cLeft = cBar.base;
-                                const cRight = cBar.x;
-                                const pY = pBar.y;
-                                const cY = cBar.y;
+                                // Calc positions
+                                const getCoord = (bar, side, type) => {
+                                    if (type === 'Milestone') return bar.base; // Milestone connect point is start
+                                    return side === 'left' ? bar.base : bar.x;
+                                };
 
-                                if (task.depType === 'SS' || task.depType === 'SF') {
-                                    startX = pLeft;
-                                } else {
-                                    startX = pRight;
-                                }
-                                startY = pY;
+                                const pType = projectData[pIdx].type;
+                                const cType = task.type;
 
-                                if (task.depType === 'FF' || task.depType === 'SF') {
-                                    endX = cRight;
-                                } else {
-                                    endX = cLeft;
-                                }
-                                endY = cY;
+                                let startX, endX;
+                                const startY = pBar.y;
+                                const endY = cBar.y;
 
-                                if (startX === pRight) startX += 0; else startX -= 0;
-                                if (endX === cRight) endX += 2; else endX -= 2;
+                                // Dep Logic
+                                if (task.depType === 'SS' || task.depType === 'SF') startX = getCoord(pBar, 'left', pType);
+                                else startX = getCoord(pBar, 'right', pType);
+
+                                if (task.depType === 'FF' || task.depType === 'SF') endX = getCoord(cBar, 'right', cType);
+                                else endX = getCoord(cBar, 'left', cType);
+
+                                // Offsets
+                                if (startX === (pType==='Milestone'?pBar.base:pBar.x)) startX += 0; else startX -= 0;
+                                if (endX === (cType==='Milestone'?cBar.base:cBar.x)) endX += 4; else endX -= 4;
 
                                 ctx.beginPath();
                                 ctx.moveTo(startX, startY);
-                                const cp1x = startX + 15;
-                                const cp2x = endX - 15;
+                                const cp1x = startX + 15; const cp2x = endX - 15;
                                 ctx.bezierCurveTo(cp1x, startY, cp2x, endY, endX, endY);
                                 ctx.stroke();
 
@@ -884,18 +723,37 @@
                                 ctx.fill();
                             }
                         });
+
+                        // 2. Draw Diamonds for Milestones
+                        projectData.forEach((task, index) => {
+                            if (task.type === 'Milestone') {
+                                const bar = meta.data[index];
+                                if (!bar) return;
+                                const x = bar.base; // Draw at Start
+                                const y = bar.y;
+                                const size = 6;
+                                
+                                ctx.beginPath();
+                                ctx.fillStyle = getStatusColor(task.pct);
+                                ctx.moveTo(x, y - size);
+                                ctx.lineTo(x + size, y);
+                                ctx.lineTo(x, y + size);
+                                ctx.lineTo(x - size, y);
+                                ctx.fill();
+                                
+                                // Outline for visibility
+                                ctx.strokeStyle = '#1E293B';
+                                ctx.lineWidth = 1;
+                                ctx.stroke();
+                            }
+                        });
                         ctx.restore();
                     }
                 }]
             });
         }
-
-        // --- NEW STATUS COLOR LOGIC ---
-        function getStatusColor(pct) {
-            if (pct === 100) return '#10B981'; // Green - Completed
-            if (pct > 0) return '#F59E0B';     // Amber - In Progress
-            return '#94A3B8';                 // Grey - Not Started
-        }
+        
+        function getStatusColor(pct) { if (pct === 100) return '#10B981'; if (pct > 0) return '#F59E0B'; return '#94A3B8'; }
     </script>
 </body>
 </html>
