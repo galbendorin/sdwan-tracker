@@ -51,9 +51,11 @@
         .btn-icon-danger { @apply p-1 rounded text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-colors cursor-pointer; }
 
         /* Modal Styles */
-        #taskModal { transition: opacity 0.2s ease-in-out; }
-        #taskModal.hidden { pointer-events: none; opacity: 0; }
-        #taskModal:not(.hidden) { pointer-events: auto; opacity: 1; }
+        .modal-overlay { 
+            background-color: rgba(0, 0, 0, 0.5); 
+            backdrop-filter: blur(4px);
+            transition: opacity 0.2s ease-in-out;
+        }
     </style>
 </head>
 <body>
@@ -69,19 +71,32 @@
         </div>
         
         <div class="flex items-center gap-4">
-            <!-- Controls -->
-            <div class="flex items-center gap-2 mr-4 border-r border-slate-200 pr-4">
-                <button onclick="setBaseline()" class="text-[10px] font-bold uppercase text-slate-500 hover:text-indigo-600 bg-slate-50 hover:bg-indigo-50 px-3 py-1.5 rounded transition-colors">
-                    Set Baseline
+            <!-- Data Controls -->
+            <div class="flex items-center gap-2 mr-2">
+                <button onclick="downloadCSV()" class="text-[10px] font-bold uppercase text-slate-600 hover:text-indigo-600 bg-white border border-slate-200 hover:border-indigo-200 px-3 py-1.5 rounded transition-colors flex items-center gap-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                    Export CSV
                 </button>
-                <label class="flex items-center gap-2 cursor-pointer">
+                <button onclick="document.getElementById('fileImport').click()" class="text-[10px] font-bold uppercase text-slate-600 hover:text-indigo-600 bg-white border border-slate-200 hover:border-indigo-200 px-3 py-1.5 rounded transition-colors flex items-center gap-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                    Import CSV
+                </button>
+                <input type="file" id="fileImport" accept=".csv" class="hidden" onchange="importCSV(this)">
+            </div>
+
+            <!-- Baseline Controls -->
+            <div class="flex items-center gap-2 mr-4 border-l border-r border-slate-200 px-4">
+                <button onclick="setBaseline()" class="text-[10px] font-bold uppercase text-slate-500 hover:text-rose-600 bg-slate-50 hover:bg-rose-50 px-3 py-1.5 rounded transition-colors" title="Overwrite current baseline with active schedule">
+                    Re-Baseline
+                </button>
+                <label class="flex items-center gap-2 cursor-pointer select-none">
                     <input type="checkbox" id="showBaselineToggle" checked onchange="toggleBaseline()" class="form-checkbox h-3 w-3 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500">
                     <span class="text-[10px] font-bold uppercase text-slate-500">Show Baseline</span>
                 </label>
             </div>
 
             <!-- Legend -->
-            <div class="hidden md:flex items-center gap-4 text-[10px] uppercase font-bold text-slate-500 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-200">
+            <div class="hidden xl:flex items-center gap-4 text-[10px] uppercase font-bold text-slate-500 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-200">
                 <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-slate-300"></span> Not Started</div>
                 <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> In Progress</div>
                 <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Complete</div>
@@ -137,8 +152,8 @@
     </main>
 
     <!-- Modal -->
-    <div id="taskModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden transform transition-all scale-100">
+    <div id="taskModal" class="hidden fixed inset-0 z-50 flex items-center justify-center modal-overlay">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden transform transition-all scale-100 m-4">
             <div class="bg-slate-50 px-6 py-4 border-b border-slate-100 flex justify-between items-center">
                 <h3 class="text-lg font-bold text-slate-800" id="modalTitle">Add New Task</h3>
                 <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600">&times;</button>
@@ -205,6 +220,9 @@
                         <option value="end">-- End of List --</option>
                     </select>
                 </div>
+                
+                <!-- Hidden Calculation Field -->
+                <input type="hidden" id="m-finish"> 
             </div>
 
             <div class="bg-slate-50 px-6 py-4 border-t border-slate-100 flex justify-end gap-2">
@@ -295,7 +313,10 @@
 
         function calculateCriticalPath() {
             criticalPathSet.clear();
-            let currentId = 72;
+            if (projectData.length === 0) return;
+            const maxId = Math.max(...projectData.map(t => t.id));
+            let currentId = maxId;
+            
             while (currentId) {
                 criticalPathSet.add(currentId);
                 const task = projectData.find(t => t.id === currentId);
@@ -303,7 +324,7 @@
             }
         }
 
-        // --- SCHEDULING ENGINE WITH ADVANCED DEPENDENCIES ---
+        // --- SCHEDULING ENGINE ---
         function calculateSchedule() {
             // Sort by ID to ensure parent processed before child
             const sortedTasks = [...projectData].sort((a, b) => a.id - b.id);
@@ -318,21 +339,15 @@
                         let newStart;
                         // Dependency Logic
                         switch(task.depType) {
-                            case 'SS': // Start-to-Start: Task starts when Parent starts
-                                newStart = pStart;
-                                break;
-                            case 'FF': // Finish-to-Finish: Task finishes when Parent finishes
-                                // Start = ParentEnd - TaskDur
-                                newStart = new Date(pEnd.getTime() - (task.dur * 86400000));
-                                break;
-                            case 'SF': // Start-to-Finish: Task finishes when Parent starts
-                                // Finish = ParentStart => Start = ParentStart - TaskDur
-                                newStart = new Date(pStart.getTime() - (task.dur * 86400000));
-                                break;
-                            case 'FS': // Finish-to-Start (Default): Task starts when Parent ends
-                            default:
-                                newStart = pEnd;
-                                break;
+                            case 'SS': newStart = pStart; break;
+                            case 'FF': newStart = new Date(pEnd.getTime() - (task.dur * 86400000)); break;
+                            case 'SF': newStart = new Date(pStart.getTime() - (task.dur * 86400000)); break;
+                            case 'FS': default: newStart = pEnd; break;
+                        }
+                        
+                        // Safety Check for Invalid Dates
+                        if (isNaN(newStart.getTime())) {
+                            newStart = new Date(parent.start); // Fallback
                         }
                         
                         task.start = newStart.toISOString().split('T')[0];
@@ -356,6 +371,85 @@
             renderChart();
         }
 
+        // --- EXPORT / IMPORT LOGIC ---
+        function downloadCSV() {
+            const headers = ["ID", "Name", "Type", "Parent", "DepType", "Duration", "Start", "Percent", "BaseStart", "BaseDur"];
+            const rows = projectData.map(t => [
+                t.id,
+                `"${t.name.replace(/"/g, '""')}"`, // Escape quotes
+                t.type,
+                t.parent || '',
+                t.depType || 'FS',
+                t.dur,
+                t.start,
+                t.pct,
+                t.baseStart || t.start,
+                t.baseDur || t.dur
+            ]);
+            
+            const csvContent = [
+                headers.join(","),
+                ...rows.map(r => r.join(","))
+            ].join("\n");
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", "sdwan_project_plan.csv");
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function importCSV(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const text = e.target.result;
+                const lines = text.split('\n');
+                
+                // Skip header, process rows
+                const newProjectData = [];
+                for (let i = 1; i < lines.length; i++) {
+                    if (!lines[i].trim()) continue;
+                    
+                    // Simple CSV parser (handles quotes roughly)
+                    const cols = lines[i].match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || lines[i].split(',');
+                    // Cleanup quotes
+                    const clean = cols.map(c => c.replace(/^"|"$/g, '').replace(/""/g, '"'));
+                    
+                    if (clean.length >= 8) {
+                        newProjectData.push({
+                            id: parseInt(clean[0]),
+                            name: clean[1],
+                            type: clean[2],
+                            parent: clean[3] ? parseInt(clean[3]) : null,
+                            depType: clean[4] || 'FS',
+                            dur: parseInt(clean[5]),
+                            start: clean[6],
+                            pct: parseInt(clean[7]),
+                            baseStart: clean[8] || clean[6], // Load baseline or fallback
+                            baseDur: parseInt(clean[9]) || parseInt(clean[5])
+                        });
+                    }
+                }
+
+                if (newProjectData.length > 0) {
+                    projectData = newProjectData;
+                    refreshView();
+                    alert("Project loaded successfully!");
+                } else {
+                    alert("Could not parse CSV.");
+                }
+            };
+            reader.readAsText(file);
+            input.value = ''; // Reset input
+        }
+
         // --- 3. MODAL & EDIT LOGIC ---
         let editingId = null;
 
@@ -365,6 +459,7 @@
             calculateCriticalPath();
             renderTable();
             renderChart();
+            updateCount();
             
             // Auto Date Logic in Modal
             const mStart = document.getElementById('m-start');
@@ -418,57 +513,73 @@
         });
 
         function openTaskModal(id = null) {
-            const modal = document.getElementById('taskModal');
-            const title = document.getElementById('modalTitle');
-            const insertDiv = document.getElementById('div-insert');
-            const insertSelect = document.getElementById('m-insert');
-            
-            insertSelect.innerHTML = '<option value="end">-- End of List --</option>';
-            projectData.forEach((t, idx) => {
-                const opt = document.createElement('option');
-                opt.value = idx;
-                opt.text = `After: [${t.id}] ${t.name.substring(0,30)}...`;
-                insertSelect.appendChild(opt);
-            });
+            try {
+                const modal = document.getElementById('taskModal');
+                const title = document.getElementById('modalTitle');
+                const insertDiv = document.getElementById('div-insert');
+                const insertSelect = document.getElementById('m-insert');
+                
+                // Safety check
+                if (!modal) { alert("Error: Modal not found."); return; }
 
-            editingId = id;
+                // Populate Select
+                insertSelect.innerHTML = '<option value="end">-- End of List --</option>';
+                projectData.forEach((t, idx) => {
+                    const opt = document.createElement('option');
+                    opt.value = idx;
+                    // Safely handle task name string
+                    const safeName = (t.name || "Task").substring(0,30);
+                    opt.text = `After: [${t.id}] ${safeName}...`;
+                    insertSelect.appendChild(opt);
+                });
 
-            if (id) {
-                title.innerText = "Edit Task Details";
-                insertDiv.classList.add('hidden');
-                
-                const task = projectData.find(t => t.id === id);
-                document.getElementById('m-name').value = task.name;
-                document.getElementById('m-type').value = task.type;
-                document.getElementById('m-parent').value = task.parent || '';
-                document.getElementById('m-depType').value = task.depType || 'FS';
-                document.getElementById('m-start').value = task.start;
-                document.getElementById('m-dur').value = task.dur;
-                document.getElementById('m-pct').value = task.pct;
-                
-                // Calc finish
-                const start = new Date(task.start);
-                const end = new Date(start.getTime() + (task.dur * 86400000));
-                document.getElementById('m-finish').value = end.toISOString().split('T')[0];
+                editingId = id;
 
-            } else {
-                title.innerText = "Add New Task";
-                insertDiv.classList.remove('hidden');
+                if (id) {
+                    // EDIT MODE
+                    title.innerText = "Edit Task Details";
+                    insertDiv.classList.add('hidden');
+                    
+                    const task = projectData.find(t => t.id === id);
+                    if (!task) return;
+
+                    document.getElementById('m-name').value = task.name;
+                    document.getElementById('m-type').value = task.type;
+                    document.getElementById('m-parent').value = task.parent || '';
+                    document.getElementById('m-depType').value = task.depType || 'FS';
+                    document.getElementById('m-start').value = task.start;
+                    document.getElementById('m-dur').value = task.dur;
+                    document.getElementById('m-pct').value = task.pct;
+                    
+                    // Calc finish
+                    const start = new Date(task.start);
+                    const end = new Date(start.getTime() + (task.dur * 86400000));
+                    document.getElementById('m-finish').value = end.toISOString().split('T')[0];
+
+                } else {
+                    // ADD NEW TASK MODE
+                    title.innerText = "Add New Task";
+                    insertDiv.classList.remove('hidden');
+                    
+                    // RESET ALL FIELDS
+                    document.getElementById('m-name').value = "";
+                    document.getElementById('m-type').value = "design";
+                    document.getElementById('m-parent').value = "";
+                    document.getElementById('m-depType').value = "FS"; 
+                    document.getElementById('m-start').value = "2026-01-08";
+                    document.getElementById('m-dur').value = "1";
+                    document.getElementById('m-pct').value = "0";
+                    
+                    const s = new Date("2026-01-08");
+                    const e = new Date(s.getTime() + 86400000);
+                    document.getElementById('m-finish').value = e.toISOString().split('T')[0];
+                }
                 
-                document.getElementById('m-name').value = "";
-                document.getElementById('m-type').value = "design";
-                document.getElementById('m-parent').value = "";
-                document.getElementById('m-depType').value = "FS";
-                document.getElementById('m-start').value = "2026-01-08";
-                document.getElementById('m-dur').value = "1";
-                document.getElementById('m-pct').value = "0";
-                
-                const s = new Date("2026-01-08");
-                const e = new Date(s.getTime() + 86400000);
-                document.getElementById('m-finish').value = e.toISOString().split('T')[0];
+                modal.classList.remove('hidden');
+            } catch (err) {
+                console.error(err);
+                alert("An error occurred opening the task window.");
             }
-            
-            modal.classList.remove('hidden');
         }
 
         function closeModal() {
@@ -476,45 +587,53 @@
         }
 
         function saveTask() {
-            const name = document.getElementById('m-name').value || "New Task";
-            const type = document.getElementById('m-type').value;
-            const dur = parseInt(document.getElementById('m-dur').value) || 0;
-            const start = document.getElementById('m-start').value;
-            const pct = parseInt(document.getElementById('m-pct').value) || 0;
-            const parent = parseInt(document.getElementById('m-parent').value) || null;
-            const depType = document.getElementById('m-depType').value;
+            try {
+                const name = document.getElementById('m-name').value || "New Task";
+                const type = document.getElementById('m-type').value;
+                const dur = parseInt(document.getElementById('m-dur').value) || 0;
+                const startVal = document.getElementById('m-start').value;
+                // Validate Start Date
+                const start = startVal ? startVal : new Date().toISOString().split('T')[0]; 
+                const pct = parseInt(document.getElementById('m-pct').value) || 0;
+                const parentInput = document.getElementById('m-parent').value;
+                const parent = parentInput ? parseInt(parentInput) : null;
+                const depType = document.getElementById('m-depType').value;
 
-            if (editingId) {
-                const task = projectData.find(t => t.id === editingId);
-                if (task) {
-                    task.name = name;
-                    task.type = type;
-                    task.dur = dur;
-                    task.start = start;
-                    task.pct = pct;
-                    task.parent = parent;
-                    task.depType = depType;
-                }
-            } else {
-                const maxId = Math.max(...projectData.map(t => t.id));
-                const newId = maxId + 1;
-                const insertVal = document.getElementById('m-insert').value;
-                
-                const newTask = {
-                    id: newId, name, type, dur, start, pct, parent, depType,
-                    baseStart: start, baseDur: dur
-                };
-
-                if (insertVal === "end") {
-                    projectData.push(newTask);
+                if (editingId) {
+                    const task = projectData.find(t => t.id === editingId);
+                    if (task) {
+                        task.name = name;
+                        task.type = type;
+                        task.dur = dur;
+                        task.start = start;
+                        task.pct = pct;
+                        task.parent = parent;
+                        task.depType = depType;
+                    }
                 } else {
-                    const index = parseInt(insertVal);
-                    projectData.splice(index + 1, 0, newTask);
-                }
-            }
+                    const maxId = projectData.length > 0 ? Math.max(...projectData.map(t => t.id)) : 0;
+                    const newId = maxId + 1;
+                    const insertVal = document.getElementById('m-insert').value;
+                    
+                    const newTask = {
+                        id: newId, name, type, dur, start, pct, parent, depType,
+                        baseStart: start, baseDur: dur
+                    };
 
-            refreshView();
-            closeModal();
+                    if (insertVal === "end") {
+                        projectData.push(newTask);
+                    } else {
+                        const index = parseInt(insertVal);
+                        projectData.splice(index + 1, 0, newTask);
+                    }
+                }
+
+                refreshView();
+                closeModal();
+            } catch(err) {
+                console.error(err);
+                alert("Failed to save task. Check inputs.");
+            }
         }
 
         function deleteTask(id) {
@@ -536,7 +655,8 @@
         }
 
         function updateCount() {
-            document.getElementById('task-count').innerText = projectData.length;
+            const countEl = document.getElementById('task-count');
+            if(countEl) countEl.innerText = projectData.length;
         }
 
         // --- INLINE EDITING LOGIC ---
@@ -573,7 +693,7 @@
 
             cell.innerHTML = inputHTML;
             const input = cell.querySelector('input, select');
-            input.focus();
+            if(input) input.focus();
         }
 
         function commitEdit(id, field, value) {
@@ -583,6 +703,7 @@
             if (field === 'dur') task.dur = parseInt(value) || 0;
             else if (field === 'pct') task.pct = Math.min(100, Math.max(0, parseInt(value) || 0));
             else if (field === 'parent') task.parent = value ? parseInt(value) : null;
+            else if (field === 'depType') task.depType = value;
             else if (field === 'start') {
                 task.start = value;
             } else if (field === 'finish') {
@@ -724,8 +845,6 @@
                                 // --- ARROW DRAWING LOGIC FOR FS, SS, FF, SF ---
                                 let startX, startY, endX, endY;
                                 
-                                // Coordinates: 
-                                // .base = left side, .x = right side, .y = vertical center
                                 const pLeft = pBar.base;
                                 const pRight = pBar.x;
                                 const cLeft = cBar.base;
@@ -733,40 +852,30 @@
                                 const pY = pBar.y;
                                 const cY = cBar.y;
 
-                                // Determine Start Point (from Parent)
                                 if (task.depType === 'SS' || task.depType === 'SF') {
-                                    startX = pLeft; // Start-to...
+                                    startX = pLeft;
                                 } else {
-                                    startX = pRight; // Finish-to... (Default FS, FF)
+                                    startX = pRight;
                                 }
                                 startY = pY;
 
-                                // Determine End Point (to Child)
                                 if (task.depType === 'FF' || task.depType === 'SF') {
-                                    endX = cRight; // ...to-Finish
+                                    endX = cRight;
                                 } else {
-                                    endX = cLeft; // ...to-Start (Default FS, SS)
+                                    endX = cLeft;
                                 }
                                 endY = cY;
 
-                                // Apply slight offset to make connection clear relative to bar edge
-                                // If connecting to Right side, shift +2px. If Left, shift -2px.
-                                if (startX === pRight) startX += 0; 
-                                else startX -= 0;
-                                
-                                if (endX === cRight) endX += 2;
-                                else endX -= 2;
+                                if (startX === pRight) startX += 0; else startX -= 0;
+                                if (endX === cRight) endX += 2; else endX -= 2;
 
                                 ctx.beginPath();
                                 ctx.moveTo(startX, startY);
-                                // Bezier Curve Logic
-                                // Control points depend on direction to create a nice 'S' or 'C' curve
-                                const cp1x = startX + 15; // Move out from parent
-                                const cp2x = endX - 15;   // Move in to child
+                                const cp1x = startX + 15;
+                                const cp2x = endX - 15;
                                 ctx.bezierCurveTo(cp1x, startY, cp2x, endY, endX, endY);
                                 ctx.stroke();
 
-                                // Arrowhead
                                 ctx.beginPath();
                                 ctx.fillStyle = ctx.strokeStyle;
                                 ctx.moveTo(endX, endY);
@@ -779,6 +888,13 @@
                     }
                 }]
             });
+        }
+
+        // --- NEW STATUS COLOR LOGIC ---
+        function getStatusColor(pct) {
+            if (pct === 100) return '#10B981'; // Green - Completed
+            if (pct > 0) return '#F59E0B';     // Amber - In Progress
+            return '#94A3B8';                 // Grey - Not Started
         }
     </script>
 </body>
