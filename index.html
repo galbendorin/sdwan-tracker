@@ -4,11 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SD-WAN Gantt Pro</title>
-    <!-- Tailwind CSS -->
+    <!-- Tailwind CSS (Dev Script) -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Chart.js & Date Adapter -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <!-- Chart.js & Date Adapter (Version Pinned for Stability) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
     
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
@@ -27,16 +27,24 @@
             --header-height: 48px;
         }
 
+        /* FIXED: Removed display:flex to allow table-layout to control widths */
         .gantt-row { height: var(--row-height); border-bottom: 1px solid #F1F5F9; box-sizing: border-box; }
+        .gantt-row.hidden-row { display: none; } /* For collapsing */
+
         .gantt-header { height: var(--header-height); background: #F8FAFC; position: sticky; top: 0; z-index: 20; border-bottom: 1px solid #E2E8F0; }
+        
+        /* FIXED: Added table-layout: fixed to strictly obey column widths */
+        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
         
         th { 
             white-space: nowrap; font-size: 0.7rem; color: #64748B; 
-            text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; text-align: left; padding: 0 8px;
+            text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; text-align: left; padding: 0 6px;
+            height: var(--header-height); background: #F8FAFC;
         }
         td { 
             white-space: nowrap; font-size: 0.75rem; color: #334155; 
-            padding: 0 8px; vertical-align: middle; 
+            padding: 0 6px; vertical-align: middle; height: var(--row-height);
+            overflow: hidden; text-overflow: ellipsis;
         }
         
         /* Editable Cells */
@@ -45,10 +53,19 @@
         .editing { padding: 0 !important; }
         .editing input, .editing select { width: 100%; height: 100%; border: 2px solid #6366F1; padding: 0 8px; font-size: 0.75rem; outline: none; background: #EEF2FF; }
 
-        .truncate-text { max-width: 180px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+        .truncate-text { max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
 
-        .btn-icon { @apply p-1 rounded text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 transition-colors cursor-pointer; }
-        .btn-icon-danger { @apply p-1 rounded text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-colors cursor-pointer; }
+        .btn-icon { padding: 4px; border-radius: 4px; color: #94A3B8; transition: all 0.2s; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+        .btn-icon:hover { color: #6366F1; background-color: #EEF2FF; }
+
+        .btn-icon-green { padding: 4px; border-radius: 4px; color: #10B981; font-weight: bold; transition: all 0.2s; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+        .btn-icon-green:hover { color: #047857; background-color: #ECFDF5; }
+
+        .btn-icon-danger { padding: 4px; border-radius: 4px; color: #94A3B8; transition: all 0.2s; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+        .btn-icon-danger:hover { color: #F43F5E; background-color: #FFF1F2; }
+
+        .toggle-btn { cursor: pointer; display: inline-block; width: 14px; text-align: center; color: #64748B; font-weight: bold; user-select: none; }
+        .toggle-btn:hover { color: #4F46E5; }
 
         /* Modal Styles */
         .modal-overlay { 
@@ -65,13 +82,17 @@
             <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold">P</div>
             <div>
                 <h1 class="text-lg font-bold text-slate-900 leading-tight">SD-WAN Project Plan</h1>
-                <p class="text-xs text-slate-500">Pro Gantt | <span id="task-count">72</span> Items</p>
+                <p class="text-xs text-slate-500">Pro Gantt | <span id="task-count">0</span> Items</p>
             </div>
         </div>
         
         <div class="flex items-center gap-4">
             <!-- Data Controls -->
             <div class="flex items-center gap-2 mr-2">
+                <button onclick="loadTemplate()" class="text-[10px] font-bold uppercase text-slate-600 hover:text-indigo-600 bg-white border border-slate-200 hover:border-indigo-200 px-3 py-1.5 rounded transition-colors flex items-center gap-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" /></svg>
+                    Template
+                </button>
                 <button onclick="downloadCSV()" class="text-[10px] font-bold uppercase text-slate-600 hover:text-indigo-600 bg-white border border-slate-200 hover:border-indigo-200 px-3 py-1.5 rounded transition-colors flex items-center gap-1">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
                     Export CSV
@@ -92,16 +113,6 @@
                     <input type="checkbox" id="showBaselineToggle" checked onchange="toggleBaseline()" class="form-checkbox h-3 w-3 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500">
                     <span class="text-[10px] font-bold uppercase text-slate-500">Show Baseline</span>
                 </label>
-            </div>
-
-            <!-- Legend -->
-            <div class="hidden xl:flex items-center gap-4 text-[10px] uppercase font-bold text-slate-500 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-200">
-                <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-slate-300"></span> Not Started</div>
-                <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> In Progress</div>
-                <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Complete</div>
-                <div class="w-px h-3 bg-slate-300 mx-1"></div>
-                <div class="flex items-center gap-1.5 transform rotate-45"><span class="w-2 h-2 bg-slate-800"></span></div> Milestone
-                <div class="flex items-center gap-1.5"><span class="w-6 h-0.5 bg-purple-600"></span> Critical</div>
             </div>
 
             <!-- Add Task Button -->
@@ -126,20 +137,23 @@
     <main class="flex-grow flex overflow-hidden">
         
         <!-- LEFT: Data Table -->
-        <div class="flex-none w-[50%] max-w-[800px] border-r border-slate-200 bg-white flex flex-col shadow-[4px_0_24px_rgba(0,0,0,0.02)] z-20">
+        <!-- FIXED: Increased panel width and added minimum width to table container -->
+        <div class="flex-none w-[60%] max-w-[1400px] border-r border-slate-200 bg-white flex flex-col shadow-[4px_0_24px_rgba(0,0,0,0.02)] z-20">
             <div class="flex-grow overflow-auto" id="grid-scroll">
-                <table class="w-full border-collapse">
+                <!-- FIXED: Min-width ensures columns don't crunch on small screens -->
+                <table class="w-full min-w-[1200px]">
                     <thead class="gantt-header">
                         <tr>
-                            <th class="w-10 text-center">ID</th>
+                            <!-- FIXED: Wider columns -->
+                            <th class="w-14 text-center">ID</th>
                             <th>Task Name</th>
                             <th class="w-16 text-center" title="Dependency">Dep</th>
-                            <th class="w-12 text-center" title="Dependency Type">Type</th>
-                            <th class="w-12 text-center">Dur</th>
-                            <th class="w-20">Start</th>
-                            <th class="w-20">Finish</th>
-                            <th class="w-12 text-center">%</th>
-                            <th class="w-10 text-center"></th>
+                            <th class="w-24 text-center" title="Dependency Type">Type</th>
+                            <th class="w-16 text-center">Dur</th>
+                            <th class="w-32">Start</th>
+                            <th class="w-32">Finish</th>
+                            <th class="w-16 text-center">%</th>
+                            <th class="w-48 text-center">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="grid-body"></tbody>
@@ -148,9 +162,17 @@
         </div>
 
         <!-- RIGHT: Gantt Chart -->
-        <div class="flex-grow flex flex-col bg-white relative min-w-0">
+        <div class="flex-grow flex flex-col bg-white relative min-w-0 overflow-hidden">
+            <!-- Timeline Header (Frozen) -->
+            <div id="chart-header-container" class="flex-none overflow-hidden bg-slate-50 border-b border-slate-200" style="height: 50px;">
+                 <div id="axis-wrapper" class="relative"> 
+                     <canvas id="axisCanvas"></canvas>
+                 </div>
+            </div>
+
+            <!-- Scrollable Timeline Body -->
             <div class="flex-grow overflow-auto" id="chart-scroll">
-                <div id="chart-container" class="relative w-full">
+                <div id="chart-container" class="relative">
                     <canvas id="ganttCanvas"></canvas>
                 </div>
             </div>
@@ -158,7 +180,7 @@
 
     </main>
 
-    <!-- Task Modal -->
+    <!-- Modal (Only for Add New) -->
     <div id="taskModal" class="hidden fixed inset-0 z-50 flex items-center justify-center modal-overlay">
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden transform transition-all scale-100 m-4 border border-slate-200">
             <div class="bg-slate-50 px-6 py-4 border-b border-slate-100 flex justify-between items-center">
@@ -171,6 +193,9 @@
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Task Name</label>
                     <input type="text" id="m-name" class="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
                 </div>
+                
+                <input type="hidden" id="m-indent" value="0">
+
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Type</label>
@@ -185,7 +210,6 @@
                     </div>
                 </div>
 
-                <!-- Dependency Section -->
                 <div class="bg-indigo-50 p-4 rounded-lg border border-indigo-100">
                     <h4 class="text-xs font-bold text-indigo-800 uppercase mb-2">Dependency Logic</h4>
                     <div class="grid grid-cols-2 gap-4">
@@ -242,8 +266,8 @@
             </div>
             <div class="p-6 space-y-4 bg-white">
                 <p class="text-sm text-slate-600 leading-relaxed">
-                    Thanks for reporting to <strong>Dorin</strong>. Please describe the issue or suggestion below. 
-                    Once saved, a CSV file will download—please share it with him to add to the backlog.
+                    Thanks for reporting. Please describe the issue or suggestion below. 
+                    Once saved, a CSV file will download.
                 </p>
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Description</label>
@@ -259,69 +283,97 @@
 
     <script>
         // --- 1. DATASET ---
-        let projectData = [
-            { id: 1, name: "Project Plan Root", parent: null, depType: "FS", start: "2026-01-08", dur: 0, type: "Milestone", pct: 100 },
-            { id: 3, name: "Contract & PO Signed", parent: 1, depType: "FS", start: "2026-01-08", dur: 0, type: "Milestone", pct: 100 },
-            { id: 4, name: "Gate 1: Kick Off", parent: 1, depType: "FS", start: "2026-02-04", dur: 0, type: "Milestone", pct: 100 },
-            { id: 5, name: "Gate 2: Discovery", parent: 4, depType: "FS", start: "2026-03-10", dur: 0, type: "Milestone", pct: 20 },
-            { id: 6, name: "Gate 3: Pilot", parent: 5, depType: "FS", start: "2026-03-20", dur: 0, type: "Milestone", pct: 0 },
-            { id: 7, name: "Gate 4: Rollout", parent: 6, depType: "FS", start: "2026-04-27", dur: 0, type: "Milestone", pct: 0 },
-            { id: 8, name: "Gate 5: Closure", parent: 7, depType: "FS", start: "2026-05-04", dur: 0, type: "Milestone", pct: 0 },
-            { id: 10, name: "Confirm Final Design", parent: 1, depType: "FS", start: "2026-01-09", dur: 3, type: "Task", pct: 100 },
-            { id: 11, name: "Prepare SSD & Cabling", parent: 10, depType: "FS", start: "2026-01-14", dur: 2, type: "Task", pct: 100 },
-            { id: 12, name: "Enter Orders (GTT)", parent: 10, depType: "FS", start: "2026-01-14", dur: 10, type: "Task", pct: 90 },
-            { id: 13, name: "MSA Signature", parent: 10, depType: "FS", start: "2026-01-14", dur: 12, type: "Task", pct: 80 },
-            { id: 14, name: "PON Re-signing", parent: 12, depType: "FS", start: "2026-01-28", dur: 5, type: "Task", pct: 50 },
-            { id: 15, name: "Orders Validated", parent: 14, depType: "FS", start: "2026-02-04", dur: 2, type: "Task", pct: 0 },
-            { id: 16, name: "EnvisionEdge Cert", parent: 1, depType: "FS", start: "2026-01-09", dur: 6, type: "Task", pct: 100 },
-            { id: 18, name: "Internal Acceptance", parent: 15, depType: "FS", start: "2026-02-06", dur: 3, type: "Task", pct: 0 },
-            { id: 19, name: "PON Validation", parent: 18, depType: "FS", start: "2026-02-11", dur: 1, type: "Task", pct: 0 },
-            { id: 20, name: "External Kick Off", parent: 19, depType: "FS", start: "2026-02-12", dur: 2, type: "Task", pct: 0 },
-            { id: 21, name: "PID Agreed", parent: 20, depType: "FS", start: "2026-02-16", dur: 2, type: "Task", pct: 0 },
-            { id: 22, name: "Plan Created", parent: 16, depType: "FS", start: "2026-01-19", dur: 2, type: "Task", pct: 100 },
-            { id: 23, name: "Tracker Created", parent: 16, depType: "FS", start: "2026-01-19", dur: 2, type: "Task", pct: 100 },
-            { id: 24, name: "RAID Log Created", parent: 16, depType: "FS", start: "2026-01-19", dur: 2, type: "Task", pct: 100 },
-            { id: 26, name: "Share SSD/HLD", parent: 16, depType: "FS", start: "2026-01-19", dur: 8, type: "Task", pct: 60 },
-            { id: 27, name: "Share TAD", parent: 15, depType: "FS", start: "2026-02-06", dur: 2, type: "Task", pct: 0 },
-            { id: 28, name: "Update IP Addresses", parent: 12, depType: "FS", start: "2026-01-28", dur: 1, type: "Task", pct: 0 },
-            { id: 30, name: "TAD Approved", parent: 27, depType: "FS", start: "2026-02-10", dur: 2, type: "Task", pct: 0 },
-            { id: 31, name: "Schedule Workshops", parent: 27, depType: "FS", start: "2026-02-10", dur: 2, type: "Task", pct: 0 },
-            { id: 32, name: "Config Review (Workshops)", parent: 27, depType: "FS", start: "2026-02-10", dur: 20, type: "Task", pct: 0 },
-            { id: 33, name: "Agree Solution", parent: 32, depType: "FS", start: "2026-03-10", dur: 5, type: "Task", pct: 0 },
-            { id: 34, name: "Client Tech Info", parent: 28, depType: "FS", start: "2026-01-29", dur: 15, type: "Task", pct: 10 },
-            { id: 36, name: "NetProv Confirm", parent: 15, depType: "FS", start: "2026-02-06", dur: 0, type: "Milestone", pct: 0 },
-            { id: 37, name: "Pilot Pre-stage", parent: 28, depType: "FS", start: "2026-01-29", dur: 6, type: "Task", pct: 20 },
-            { id: 38, name: "Pilot Shipment", parent: 37, depType: "FS", start: "2026-02-06", dur: 15, type: "Task", pct: 0 },
-            { id: 39, name: "Rollout Pre-stage", parent: 27, depType: "FS", start: "2026-02-10", dur: 10, type: "Task", pct: 0 },
-            { id: 40, name: "Rollout Shipment", parent: 39, depType: "FS", start: "2026-02-24", dur: 15, type: "Task", pct: 0 },
-            { id: 42, name: "Identify Pilot Sites", parent: 21, depType: "FS", start: "2026-02-18", dur: 1, type: "Task", pct: 0 },
-            { id: 43, name: "Final Workshop", parent: 38, depType: "FS", start: "2026-02-27", dur: 3, type: "Task", pct: 0 },
-            { id: 44, name: "Final LLDs", parent: 43, depType: "FS", start: "2026-03-04", dur: 1, type: "Task", pct: 0 },
-            { id: 45, name: "Define Success Scope", parent: 33, depType: "FS", start: "2026-03-17", dur: 5, type: "Task", pct: 0 },
-            { id: 46, name: "Determine UAT", parent: 33, depType: "FS", start: "2026-03-17", dur: 5, type: "Task", pct: 0 },
-            { id: 47, name: "Create Runbook", parent: 43, depType: "FS", start: "2026-03-04", dur: 1, type: "Task", pct: 0 },
-            { id: 49, name: "Site 1 Mig", parent: 44, depType: "FS", start: "2026-03-05", dur: 1, type: "Task", pct: 0 },
-            { id: 50, name: "Site 2 Mig", parent: 49, depType: "FS", start: "2026-03-06", dur: 2, type: "Task", pct: 0 },
-            { id: 51, name: "Site 3 Mig", parent: 50, depType: "FS", start: "2026-03-10", dur: 2, type: "Task", pct: 0 },
-            { id: 52, name: "Design Signed", parent: 51, depType: "FS", start: "2026-03-12", dur: 5, type: "Task", pct: 0 },
-            { id: 53, name: "Create DDD", parent: 52, depType: "FS", start: "2026-03-19", dur: 1, type: "Task", pct: 0 },
-            { id: 54, name: "Handover Net Prov", parent: 53, depType: "FS", start: "2026-03-20", dur: 1, type: "Task", pct: 0 },
-            { id: 56, name: "Site 3 Rollout", parent: 54, depType: "FS", start: "2026-03-23", dur: 5, type: "Task", pct: 0 },
-            { id: 57, name: "Site 4 Rollout", parent: 56, depType: "FS", start: "2026-03-30", dur: 2, type: "Task", pct: 0 },
-            { id: 58, name: "Site 5 Rollout", parent: 57, depType: "FS", start: "2026-04-01", dur: 2, type: "Task", pct: 0 },
-            { id: 59, name: "Site 6 Rollout", parent: 58, depType: "FS", start: "2026-04-03", dur: 2, type: "Task", pct: 0 },
-            { id: 60, name: "Site 7 Rollout", parent: 59, depType: "FS", start: "2026-04-07", dur: 2, type: "Task", pct: 0 },
-            { id: 61, name: "Site 8 Rollout", parent: 60, depType: "FS", start: "2026-04-09", dur: 2, type: "Task", pct: 0 },
-            { id: 62, name: "Site 9 Rollout", parent: 61, depType: "FS", start: "2026-04-13", dur: 2, type: "Task", pct: 0 },
-            { id: 63, name: "Site 10 Rollout", parent: 62, depType: "FS", start: "2026-04-15", dur: 2, type: "Task", pct: 0 },
-            { id: 64, name: "Site 11 Rollout", parent: 63, depType: "FS", start: "2026-04-17", dur: 2, type: "Task", pct: 0 },
-            { id: 65, name: "Site 12 Rollout", parent: 64, depType: "FS", start: "2026-04-21", dur: 2, type: "Task", pct: 0 },
-            { id: 66, name: "Site 13 Rollout", parent: 65, depType: "FS", start: "2026-04-23", dur: 2, type: "Task", pct: 0 },
-            { id: 67, name: "Site 14 Rollout", parent: 66, depType: "FS", start: "2026-04-27", dur: 2, type: "Task", pct: 0 },
-            { id: 68, name: "EnvisionDX Access", parent: 49, depType: "FS", start: "2026-03-06", dur: 1, type: "Task", pct: 0 },
-            { id: 69, name: "Service Reviews", parent: 49, depType: "FS", start: "2026-03-06", dur: 1, type: "Task", pct: 0 },
-            { id: 71, name: "Lessons Learned", parent: 67, depType: "FS", start: "2026-04-29", dur: 3, type: "Task", pct: 0 },
-            { id: 72, name: "Project Closed", parent: 71, depType: "FS", start: "2026-05-04", dur: 0, type: "Milestone", pct: 0 }
+        let projectData = []; 
+        let collapsedParents = new Set(); // To track collapsed rows
+
+        // --- TEMPLATE DATA ---
+        const templateData = [
+            { id: 1, name: "Project Plan", type: "root", parent: null, depType: "FS", dur: 0, start: "2026-01-08", pct: 0, indent: 0 },
+            { id: 2, name: "Project Milestones", type: "Task", parent: null, depType: "FS", dur: 0, start: "2026-01-08", pct: 0, indent: 1 },
+            { id: 3, name: "Pre-sales / Contract and PO signed", type: "Milestone", parent: 9, depType: "FS", dur: 0, start: "2026-01-08", pct: 0, indent: 2 },
+            { id: 4, name: "Project Gate 1 - Kick off and Pilot Initiation", type: "Milestone", parent: 17, depType: "FS", dur: 0, start: "2026-01-08", pct: 0, indent: 2 },
+            { id: 5, name: "Project Gate 2 - Onboarding and technical discovery", type: "Milestone", parent: 33, depType: "FS", dur: 0, start: "2026-01-08", pct: 0, indent: 2 },
+            { id: 6, name: "Project Gate 3 - Pilot", type: "Milestone", parent: 45, depType: "FS", dur: 0, start: "2026-01-08", pct: 0, indent: 2 },
+            { id: 7, name: "Project Gate 4 - Rollout", type: "Milestone", parent: 59, depType: "FS", dur: 0, start: "2026-01-08", pct: 0, indent: 2 },
+            { id: 8, name: "Project Gate 5 - Service Handover and Closure", type: "Milestone", parent: 75, depType: "FS", dur: 0, start: "2026-01-08", pct: 0, indent: 2 },
+            
+            { id: 9, name: "Pre-sales / Contract and PO signed", type: "Task", parent: null, depType: "FS", dur: 0, start: "2026-01-08", pct: 0, indent: 1 },
+            { id: 10, name: "Confirm final design with client", type: "Task", parent: 1, depType: "FS", dur: 3, start: "2026-01-09", pct: 100, indent: 2 },
+            { id: 11, name: "Prepare SSD incl. cabling & design assumptions", type: "Task", parent: 10, depType: "FS", dur: 2, start: "2026-01-14", pct: 100, indent: 2 },
+            { id: 12, name: "Enter orders into GTT system", type: "Task", parent: 10, depType: "FS", dur: 10, start: "2026-01-14", pct: 100, indent: 2 },
+            { id: 13, name: "MSA signature", type: "Task", parent: 10, depType: "FS", dur: 12, start: "2026-01-14", pct: 0, indent: 2 },
+            { id: 14, name: "PONs to be re-signed", type: "Task", parent: 12, depType: "FS", dur: 5, start: "2026-01-28", pct: 10, indent: 2 },
+            { id: 15, name: "Orders validated by OA & SC", type: "Task", parent: 14, depType: "FS", dur: 2, start: "2026-02-04", pct: 10, indent: 2 },
+            { id: 16, name: "EnvisionEdge Certification", type: "Task", parent: 1, depType: "FS", dur: 6, start: "2026-01-09", pct: 100, indent: 2 },
+            
+            { id: 17, name: "Project Gate 1 - Kick off and Pilot Initiation", type: "Task", parent: null, depType: "FS", dur: 0, start: "2026-01-08", pct: 0, indent: 1 },
+            { id: 18, name: "Internal Project Acceptance", type: "Task", parent: 15, depType: "FS", dur: 3, start: "2026-02-06", pct: 100, indent: 2 },
+            { id: 19, name: "PON Data Validation - PM", type: "Task", parent: 18, depType: "FS", dur: 1, start: "2026-02-11", pct: 100, indent: 2 },
+            { id: 20, name: "External Project Kick off", type: "Task", parent: 19, depType: "FS", dur: 2, start: "2026-02-12", pct: 100, indent: 2 },
+            { id: 21, name: "Has the Project Initiation Document been agreed", type: "Task", parent: 20, depType: "FS", dur: 2, start: "2026-02-16", pct: 40, indent: 2 },
+            { id: 22, name: "Has the Project Plan been created", type: "Task", parent: 16, depType: "FS", dur: 2, start: "2026-01-19", pct: 100, indent: 2 },
+            { id: 23, name: "Has the Project Master Tracker been created", type: "Task", parent: 16, depType: "FS", dur: 2, start: "2026-01-19", pct: 100, indent: 2 },
+            { id: 24, name: "Has the RAID Log been created", type: "Task", parent: 16, depType: "FS", dur: 2, start: "2026-01-19", pct: 100, indent: 2 },
+            { id: 25, name: "Have the External Status Report been created", type: "Task", parent: 16, depType: "FS", dur: 2, start: "2026-01-19", pct: 100, indent: 2 },
+            { id: 26, name: "Solution Consultant shared the SSD", type: "Task", parent: 16, depType: "FS", dur: 8, start: "2026-01-19", pct: 50, indent: 2 },
+            { id: 27, name: "Solution Consultant shared the TAD", type: "Task", parent: 15, depType: "FS", dur: 2, start: "2026-02-06", pct: 90, indent: 2 },
+            { id: 28, name: "Client to provide updated IP addresses", type: "Task", parent: 12, depType: "FS", dur: 1, start: "2026-01-28", pct: 90, indent: 2 },
+            
+            { id: 29, name: "Scope change", type: "Task", parent: null, depType: "FS", dur: 0, start: "2026-01-08", pct: 0, indent: 1 },
+            { id: 30, name: "Adding site 6B in CMD", type: "Task", parent: 29, depType: "FS", dur: 10, start: "2026-01-28", pct: 25, indent: 2 },
+            { id: 31, name: "Receive the technical solution", type: "Task", parent: 30, depType: "FS", dur: 10, start: "2026-01-28", pct: 0, indent: 2 },
+            { id: 32, name: "Complete pre-staging", type: "Task", parent: 31, depType: "FS", dur: 10, start: "2026-02-11", pct: 0, indent: 2 },
+            
+            { id: 33, name: "Project Gate 2 - Onboarding", type: "Task", parent: null, depType: "FS", dur: 0, start: "2026-01-08", pct: 0, indent: 1 },
+            { id: 34, name: "Scope/TAD been approved by TDA", type: "Task", parent: 27, depType: "FS", dur: 2, start: "2026-02-10", pct: 10, indent: 2 },
+            { id: 35, name: "SD WAN Technical Workshop(s) Scheduled", type: "Task", parent: 27, depType: "FS", dur: 2, start: "2026-02-10", pct: 0, indent: 2 },
+            { id: 36, name: "Review the configurations", type: "Task", parent: 27, depType: "FS", dur: 20, start: "2026-02-10", pct: 0, indent: 2 },
+            { id: 37, name: "Provide feedback/Agree on the solution", type: "Task", parent: 36, depType: "FS", dur: 5, start: "2026-03-10", pct: 0, indent: 2 },
+            { id: 38, name: "Has all client info been supplied?", type: "Task", parent: 28, depType: "FS", dur: 15, start: "2026-01-29", pct: 10, indent: 2 },
+            
+            { id: 39, name: "Logistics", type: "Task", parent: null, depType: "FS", dur: 0, start: "2026-01-08", pct: 0, indent: 1 },
+            { id: 40, name: "NetProv & SCM - confirm", type: "Task", parent: 15, depType: "FS", dur: 0, start: "2026-02-06", pct: 100, indent: 2 },
+            { id: 41, name: "Pilot pre-staging completed", type: "Task", parent: 28, depType: "FS", dur: 6, start: "2026-01-29", pct: 75, indent: 2 },
+            { id: 42, name: "HW for Pilot sites Shipment", type: "Task", parent: 41, depType: "FS", dur: 15, start: "2026-02-06", pct: 0, indent: 2 },
+            { id: 43, name: "Remaining 11 sites pre-staging completed", type: "Task", parent: 27, depType: "FS", dur: 10, start: "2026-02-10", pct: 0, indent: 2 },
+            { id: 44, name: "HW for 11+1.5 sites Shipment", type: "Task", parent: 43, depType: "FS", dur: 15, start: "2026-02-24", pct: 0, indent: 2 },
+            
+            { id: 45, name: "Project Gate 3 - Pilot", type: "Task", parent: null, depType: "FS", dur: 0, start: "2026-01-08", pct: 0, indent: 1 },
+            { id: 46, name: "Identify Pilot sites", type: "Task", parent: 21, depType: "FS", dur: 1, start: "2026-02-18", pct: 100, indent: 2 },
+            { id: 47, name: "SD-WAN Technical Workshop (Final)", type: "Task", parent: 42, depType: "FS", dur: 3, start: "2026-02-27", pct: 0, indent: 2 },
+            { id: 48, name: "Final Low Level Diagrams supplied", type: "Task", parent: 47, depType: "FS", dur: 1, start: "2026-03-04", pct: 0, indent: 2 },
+            { id: 49, name: "Define Success vs Failure Scope", type: "Task", parent: 34, depType: "FS", dur: 5, start: "2026-02-18", pct: 0, indent: 2 },
+            { id: 50, name: "Determine UAT", type: "Task", parent: 47, depType: "FS", dur: 1, start: "2026-03-04", pct: 0, indent: 2 },
+            { id: 51, name: "Create a detailed runbook", type: "Task", parent: 47, depType: "FS", dur: 1, start: "2026-03-04", pct: 0, indent: 2 },
+            
+            { id: 52, name: "Migration onto SD WAN", type: "Task", parent: null, depType: "FS", dur: 0, start: "2026-01-08", pct: 0, indent: 1 },
+            { id: 53, name: "Site 1 DC Ecity", type: "Task", parent: 48, depType: "FS", dur: 5, start: "2026-03-05", pct: 0, indent: 2 },
+            { id: 54, name: "Site 2 - Hyderabad", type: "Task", parent: 53, depType: "FS", dur: 2, start: "2026-03-12", pct: 0, indent: 2 },
+            { id: 55, name: "Site 3 - Hennagara", type: "Task", parent: 54, depType: "FS", dur: 2, start: "2026-03-16", pct: 0, indent: 2 },
+            { id: 56, name: "Design Agreed and signed", type: "Task", parent: 55, depType: "FS", dur: 5, start: "2026-03-18", pct: 0, indent: 2 },
+            { id: 57, name: "Create the DDD", type: "Task", parent: 56, depType: "FS", dur: 1, start: "2026-03-25", pct: 0, indent: 2 },
+            { id: 58, name: "Handover to Net Prov", type: "Task", parent: 57, depType: "FS", dur: 1, start: "2026-03-26", pct: 0, indent: 2 },
+            
+            { id: 59, name: "Project Gate 4 - Rollout", type: "Task", parent: null, depType: "FS", dur: 0, start: "2026-01-08", pct: 0, indent: 1 },
+            { id: 60, name: "Site 3", type: "Task", parent: 58, depType: "FS", dur: 5, start: "2026-03-27", pct: 0, indent: 2 },
+            { id: 61, name: "Site 4", type: "Task", parent: 60, depType: "FS", dur: 2, start: "2026-04-03", pct: 0, indent: 2 },
+            { id: 62, name: "Site 5", type: "Task", parent: 61, depType: "FS", dur: 2, start: "2026-04-07", pct: 0, indent: 2 },
+            { id: 63, name: "Site 6", type: "Task", parent: 62, depType: "FS", dur: 2, start: "2026-04-09", pct: 0, indent: 2 },
+            { id: 64, name: "Site 7", type: "Task", parent: 63, depType: "FS", dur: 2, start: "2026-04-13", pct: 0, indent: 2 },
+            { id: 65, name: "Site 8", type: "Task", parent: 64, depType: "FS", dur: 2, start: "2026-04-15", pct: 0, indent: 2 },
+            { id: 66, name: "Site 9", type: "Task", parent: 65, depType: "FS", dur: 2, start: "2026-04-17", pct: 0, indent: 2 },
+            { id: 67, name: "Site 10", type: "Task", parent: 66, depType: "FS", dur: 2, start: "2026-04-21", pct: 0, indent: 2 },
+            { id: 68, name: "Site 11", type: "Task", parent: 67, depType: "FS", dur: 2, start: "2026-04-23", pct: 0, indent: 2 },
+            { id: 69, name: "Site 12", type: "Task", parent: 68, depType: "FS", dur: 2, start: "2026-04-27", pct: 0, indent: 2 },
+            { id: 70, name: "Site 13", type: "Task", parent: 69, depType: "FS", dur: 2, start: "2026-04-29", pct: 0, indent: 2 },
+            { id: 71, name: "Site 14", type: "Task", parent: 70, depType: "FS", dur: 2, start: "2026-05-01", pct: 0, indent: 2 },
+            { id: 72, name: "Any issues with deployment", type: "Task", parent: 71, depType: "FS", dur: 10, start: "2026-05-05", pct: 0, indent: 2 },
+            { id: 73, name: "EnvisionDX access granted", type: "Task", parent: 54, depType: "FS", dur: 1, start: "2026-03-16", pct: 0, indent: 2 },
+            { id: 74, name: "Service Management / Account reviews", type: "Task", parent: 54, depType: "FS", dur: 1, start: "2026-03-16", pct: 0, indent: 2 },
+            
+            { id: 75, name: "Project Gate 5 - Service Handover and Closure", type: "Task", parent: null, depType: "FS", dur: 0, start: "2026-01-08", pct: 0, indent: 1 },
+            { id: 76, name: "Lesssons Learned meeting", type: "Task", parent: 72, depType: "FS", dur: 3, start: "2026-05-19", pct: 0, indent: 2 },
+            { id: 77, name: "Project Closed", type: "Milestone", parent: 76, depType: "FS", dur: 2, start: "2026-05-22", pct: 0, indent: 2 }
         ];
 
         // --- 2. LOGIC ---
@@ -333,40 +385,93 @@
                 if (!t.baseStart) t.baseStart = t.start;
                 if (!t.baseDur) t.baseDur = t.dur;
                 if (!t.depType) t.depType = "FS"; 
+                if (t.indent === undefined) t.indent = 0;
             });
         }
 
+        function loadTemplate() {
+            if(projectData.length > 0 && !confirm("Load Standard SD-WAN Template? This will overwrite current data.")) return;
+            
+            projectData = JSON.parse(JSON.stringify(templateData));
+            calculateSchedule(); 
+            // Set baselines AFTER calculation
+            projectData.forEach(t => {
+                t.baseStart = t.start;
+                t.baseDur = t.dur;
+            });
+            refreshView();
+        }
+        
         function calculateCriticalPath() {
             criticalPathSet.clear();
             if (projectData.length === 0) return;
-            const maxId = Math.max(...projectData.map(t => t.id));
-            let currentId = maxId;
-            while (currentId) {
-                criticalPathSet.add(currentId);
-                const task = projectData.find(t => t.id === currentId);
-                currentId = task ? task.parent : null;
-            }
+            // Only consider tasks that are not ignored/hidden (optional logic)
+            
+            let lastTask = projectData[0];
+            let maxEnd = 0;
+            projectData.forEach(t => {
+                const end = new Date(t.start).getTime() + (t.dur * 86400000);
+                if (end > maxEnd) { maxEnd = end; lastTask = t; }
+            });
+
+            if(!lastTask) return;
+
+            const trace = (taskId) => {
+                criticalPathSet.add(taskId);
+                const t = projectData.find(x => x.id === taskId);
+                if (t && t.parent) trace(t.parent);
+            };
+            trace(lastTask.id);
         }
 
         function calculateSchedule() {
-            const sortedTasks = [...projectData].sort((a, b) => a.id - b.id);
-            sortedTasks.forEach(task => {
-                if (task.parent) {
-                    const parent = projectData.find(p => p.id === task.parent);
-                    if (parent) {
-                        const pStart = new Date(parent.start);
-                        const pEnd = new Date(pStart.getTime() + (parent.dur * 86400000));
-                        let newStart;
-                        switch(task.depType) {
-                            case 'SS': newStart = pStart; break;
-                            case 'FF': newStart = new Date(pEnd.getTime() - (task.dur * 86400000)); break;
-                            case 'SF': newStart = new Date(pStart.getTime() - (task.dur * 86400000)); break;
-                            case 'FS': default: newStart = pEnd; break;
-                        }
-                        if (isNaN(newStart.getTime())) newStart = new Date(parent.start);
-                        task.start = newStart.toISOString().split('T')[0];
-                    }
+            const taskMap = new Map(projectData.map(t => [t.id, t]));
+            const cache = new Map();
+            const stack = []; // For cycle detection
+
+            function resolveStart(taskId) {
+                if(cache.has(taskId)) return cache.get(taskId);
+                
+                const task = taskMap.get(taskId);
+                if(!task) return new Date(); 
+                
+                if(stack.includes(taskId)) {
+                    console.warn("Circular dependency detected:", taskId);
+                    return new Date(task.start);
                 }
+                stack.push(taskId);
+
+                if(!task.parent || !taskMap.has(task.parent)) {
+                    const d = new Date(task.start);
+                    cache.set(taskId, d);
+                    stack.pop();
+                    return d;
+                }
+
+                const pStart = resolveStart(task.parent);
+                const parent = taskMap.get(task.parent);
+                
+                const pDur = parent.dur || 0;
+                const pEnd = new Date(pStart.getTime() + (pDur * 86400000));
+                
+                let newStart;
+                switch(task.depType) {
+                    case 'SS': newStart = pStart; break;
+                    case 'FF': newStart = new Date(pEnd.getTime() - (task.dur * 86400000)); break;
+                    case 'SF': newStart = new Date(pStart.getTime() - (task.dur * 86400000)); break;
+                    case 'FS': default: newStart = pEnd; break;
+                }
+                
+                if (isNaN(newStart.getTime())) newStart = pEnd;
+                
+                cache.set(taskId, newStart);
+                stack.pop();
+                return newStart;
+            }
+
+            projectData.forEach(task => {
+                const s = resolveStart(task.id);
+                task.start = s.toISOString().split('T')[0];
             });
         }
 
@@ -395,15 +500,49 @@
             }
         }
 
+        function modifyIndent(id, change) {
+            const task = projectData.find(t => t.id === id);
+            if(task) {
+                task.indent = Math.max(0, (task.indent || 0) + change);
+                renderTable();
+            }
+        }
+
+        // --- ROW COLLAPSING LOGIC ---
+        function toggleCollapse(id) {
+            if(collapsedParents.has(id)) collapsedParents.delete(id);
+            else collapsedParents.add(id);
+            renderTable();
+            renderChart();
+        }
+
+        function isRowVisible(index) {
+            // A row is visible if NONE of its parents are collapsed
+            // We need to look up the tree based on indentation
+            if (index === 0) return true;
+            
+            let currentIndent = projectData[index].indent;
+            for(let i = index - 1; i >= 0; i--) {
+                const t = projectData[i];
+                if(t.indent < currentIndent) {
+                    // This is a parent/ancestor
+                    if(collapsedParents.has(t.id)) return false;
+                    currentIndent = t.indent;
+                }
+                if(currentIndent === 0) break;
+            }
+            return true;
+        }
+
         // --- IMPORT/EXPORT ---
         function downloadCSV() {
-            const headers = ["ID", "Name", "Type", "Parent", "DepType", "Duration", "Start", "Finish", "Percent", "BaseStart", "BaseDur"];
+            const headers = ["ID", "Name", "Type", "Parent", "DepType", "Duration", "Start", "Finish", "Percent", "BaseStart", "BaseDur", "Indent"];
             const rows = projectData.map(t => {
                 const startDate = new Date(t.start);
                 const endDate = new Date(startDate.getTime() + (t.dur * 86400000));
                 return [
-                    t.id, `"${t.name.replace(/"/g, '""')}"`, t.type, t.parent || '', t.depType || 'FS',
-                    t.dur, t.start, endDate.toISOString().split('T')[0], t.pct, t.baseStart || t.start, t.baseDur || t.dur
+                    t.id, `"${(t.name || '').replace(/"/g, '""')}"`, t.type, t.parent || '', t.depType || 'FS', 
+                    t.dur, t.start, endDate.toISOString().split('T')[0], t.pct, t.baseStart || t.start, t.baseDur || t.dur, t.indent || 0
                 ];
             });
             const csvContent = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
@@ -430,14 +569,16 @@
                     const clean = cols.map(c => c.replace(/^"|"$/g, '').replace(/""/g, '"'));
                     if (clean.length >= 9) {
                         newProjectData.push({
-                            id: parseInt(clean[0]), name: clean[1], type: clean[2], parent: clean[3] ? parseInt(clean[3]) : null,
+                            id: parseInt(clean[0]), name: clean[1], type: clean[2], parent: clean[3] ? parseInt(clean[3]) : null, 
                             depType: clean[4] || 'FS', dur: parseInt(clean[5]), start: clean[6], pct: parseInt(clean[8]),
-                            baseStart: clean[9] || clean[6], baseDur: parseInt(clean[10]) || parseInt(clean[5])
+                            baseStart: clean[9] || clean[6], baseDur: parseInt(clean[10]) || parseInt(clean[5]),
+                            indent: parseInt(clean[11]) || 0
                         });
                     }
                 }
                 if (newProjectData.length > 0) {
                     projectData = newProjectData;
+                    calculateSchedule();
                     refreshView();
                     alert("Project loaded!");
                 }
@@ -480,21 +621,30 @@
 
         // --- MODAL ---
         let editingId = null;
+        let insertTargetId = null;
+        let isCreatingSubtask = false;
 
-        function openTaskModal(id = null) {
+        function openTaskModal(id = null, mode = 'edit') {
             try {
                 const modal = document.getElementById('taskModal');
                 const insertSelect = document.getElementById('m-insert');
+                
                 insertSelect.innerHTML = '<option value="end">-- End of List --</option>';
-                projectData.forEach((t, idx) => {
-                    const opt = document.createElement('option');
-                    opt.value = idx;
-                    opt.text = `After: [${t.id}] ${t.name.substring(0,30)}...`;
-                    insertSelect.appendChild(opt);
-                });
+                if(projectData.length > 0) {
+                    projectData.forEach((t, idx) => {
+                        const opt = document.createElement('option');
+                        opt.value = idx;
+                        const safeName = (t.name || "Task").substring(0,30);
+                        opt.text = `After: [${t.id}] ${safeName}...`;
+                        insertSelect.appendChild(opt);
+                    });
+                }
 
                 editingId = id;
-                if (id) {
+                insertTargetId = null;
+                isCreatingSubtask = false;
+
+                if (mode === 'edit' && id) {
                     document.getElementById('modalTitle').innerText = "Edit Task";
                     document.getElementById('div-insert').classList.add('hidden');
                     const task = projectData.find(t => t.id === id);
@@ -505,6 +655,36 @@
                     document.getElementById('m-start').value = task.start;
                     document.getElementById('m-dur').value = task.dur;
                     document.getElementById('m-pct').value = task.pct;
+                    document.getElementById('m-indent').value = task.indent || 0;
+                } else if (mode === 'subtask' && id) {
+                    isCreatingSubtask = true;
+                    insertTargetId = id;
+                    document.getElementById('modalTitle').innerText = "Add Subtask";
+                    document.getElementById('div-insert').classList.add('hidden');
+                    const parentTask = projectData.find(t => t.id === id);
+                    document.getElementById('m-name').value = "";
+                    document.getElementById('m-type').value = "Task";
+                    document.getElementById('m-parent').value = ""; 
+                    document.getElementById('m-depType').value = "FS"; 
+                    document.getElementById('m-start').value = new Date().toISOString().split('T')[0];
+                    document.getElementById('m-dur').value = "1";
+                    document.getElementById('m-pct').value = "0";
+                    document.getElementById('m-indent').value = (parentTask.indent || 0) + 1;
+                    editingId = null;
+                } else if (mode === 'insert' && id) {
+                    insertTargetId = id;
+                    document.getElementById('modalTitle').innerText = "Insert Task Below";
+                    document.getElementById('div-insert').classList.add('hidden');
+                    const siblingTask = projectData.find(t => t.id === id);
+                    document.getElementById('m-name').value = "";
+                    document.getElementById('m-type').value = "Task";
+                    document.getElementById('m-parent').value = id; 
+                    document.getElementById('m-depType').value = "FS"; 
+                    document.getElementById('m-start').value = new Date().toISOString().split('T')[0];
+                    document.getElementById('m-dur').value = "1";
+                    document.getElementById('m-pct').value = "0";
+                    document.getElementById('m-indent').value = siblingTask.indent || 0;
+                    editingId = null;
                 } else {
                     document.getElementById('modalTitle').innerText = "Add New Task";
                     document.getElementById('div-insert').classList.remove('hidden');
@@ -515,10 +695,11 @@
                     document.getElementById('m-start').value = new Date().toISOString().split('T')[0];
                     document.getElementById('m-dur').value = "1";
                     document.getElementById('m-pct').value = "0";
+                    document.getElementById('m-indent').value = "0";
                 }
                 toggleDurationState();
                 modal.classList.remove('hidden');
-            } catch (err) { console.error(err); alert("Error opening modal"); }
+            } catch (err) { console.error(err); alert("Error opening modal: " + err.message); }
         }
 
         function closeModal() { document.getElementById('taskModal').classList.add('hidden'); }
@@ -528,23 +709,36 @@
                 const name = document.getElementById('m-name').value || "New Task";
                 const type = document.getElementById('m-type').value;
                 let dur = parseInt(document.getElementById('m-dur').value) || 0;
-                if (type === 'Milestone') dur = 0; // Enforce
+                if (type === 'Milestone') dur = 0; 
                 
                 const start = document.getElementById('m-start').value || new Date().toISOString().split('T')[0];
                 const pct = parseInt(document.getElementById('m-pct').value) || 0;
-                const parent = parseInt(document.getElementById('m-parent').value) || null;
+                const parentInput = document.getElementById('m-parent').value;
+                const parent = parentInput ? parseInt(parentInput) : null;
                 const depType = document.getElementById('m-depType').value;
+                const indent = parseInt(document.getElementById('m-indent').value) || 0;
 
                 if (editingId) {
                     const task = projectData.find(t => t.id === editingId);
-                    if (task) Object.assign(task, { name, type, dur, start, pct, parent, depType });
+                    if (task) Object.assign(task, { name, type, dur, start, pct, parent, depType, indent });
                 } else {
                     const maxId = projectData.length > 0 ? Math.max(...projectData.map(t => t.id)) : 0;
                     const newId = maxId + 1;
-                    const insertVal = document.getElementById('m-insert').value;
-                    const newTask = { id: newId, name, type, dur, start, pct, parent, depType, baseStart: start, baseDur: dur };
-                    if (insertVal === "end") projectData.push(newTask);
-                    else projectData.splice(parseInt(insertVal) + 1, 0, newTask);
+                    
+                    const newTask = { id: newId, name, type, dur, start, pct, parent, depType, baseStart: start, baseDur: dur, indent };
+                    
+                    if (insertTargetId) {
+                        const idx = projectData.findIndex(t => t.id === insertTargetId);
+                        if (idx !== -1) {
+                            projectData.splice(idx + 1, 0, newTask);
+                        } else {
+                            projectData.push(newTask);
+                        }
+                    } else {
+                        const insertVal = document.getElementById('m-insert').value;
+                        if (insertVal === "end") projectData.push(newTask);
+                        else projectData.splice(parseInt(insertVal) + 1, 0, newTask);
+                    }
                 }
                 refreshView();
                 closeModal();
@@ -554,7 +748,12 @@
         function deleteTask(id) {
             if(confirm("Delete Task?")) {
                 const idx = projectData.findIndex(t => t.id === id);
-                if (idx > -1) { projectData.splice(idx, 1); refreshView(); }
+                if (idx > -1) { 
+                    // Orphan prevention: Update any children of this task to have no parent
+                    projectData.forEach(t => { if(t.parent === id) t.parent = null; });
+                    projectData.splice(idx, 1); 
+                    refreshView(); 
+                }
             }
         }
 
@@ -566,184 +765,295 @@
             // Sync Scroll
             const grid = document.getElementById('grid-scroll');
             const chart = document.getElementById('chart-scroll');
-            let isSyncingLeft = false; 
-            let isSyncingRight = false;
-            grid.onscroll = function() { if (!isSyncingLeft) { isSyncingRight = true; chart.scrollTop = this.scrollTop; } isSyncingLeft = false; };
-            chart.onscroll = function() { if (!isSyncingRight) { isSyncingLeft = true; grid.scrollTop = this.scrollTop; } isSyncingRight = false; };
+            const header = document.getElementById('axis-wrapper');
+            let isSyncing = false;
+
+            const syncVertical = (source, target) => {
+                if(!isSyncing) { isSyncing = true; target.scrollTop = source.scrollTop; isSyncing = false; }
+            };
+            grid.onscroll = () => syncVertical(grid, chart);
+            chart.onscroll = () => {
+                syncVertical(chart, grid);
+                header.style.left = `-${chart.scrollLeft}px`; 
+            };
         });
 
         function refreshView() {
             calculateSchedule();
             calculateCriticalPath();
             renderTable();
-            renderChart();
+            try { renderChart(); } catch(e) { console.warn("Chart render skipped", e); }
             document.getElementById('task-count').innerText = projectData.length;
         }
 
         function renderTable() {
             const tbody = document.getElementById('grid-body');
             tbody.innerHTML = '';
-            projectData.forEach(task => {
+            projectData.forEach((task, index) => {
+                if(!isRowVisible(index)) return;
+
                 const endStr = new Date(new Date(task.start).getTime() + (task.dur * 86400000)).toISOString().split('T')[0];
                 const row = document.createElement('tr');
                 row.className = 'gantt-row hover:bg-slate-50 transition-colors group';
                 
-                const typeBadge = task.type === 'Milestone' 
-                    ? `<span class="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase border border-purple-200 text-purple-600 bg-purple-50">Milestone</span>`
-                    : `<span class="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase border border-slate-200 text-slate-500">Task</span>`;
+                const paddingLeft = (task.indent || 0) * 20 + 8;
+                const isParent = projectData.some(t => t.indent > task.indent && projectData.indexOf(t) > index); // Simple heuristic
+                const toggleIcon = collapsedParents.has(task.id) ? '+' : '−';
+                const toggleVisibility = isParent || (index < projectData.length -1 && projectData[index+1].indent > task.indent) ? 'visible' : 'hidden';
 
+                // Disable date editing if it has a dependency
+                const isDateDisabled = task.parent !== null;
+                const dateClass = isDateDisabled ? "bg-slate-50 text-slate-400 cursor-not-allowed" : "editable";
+                const dateClick = isDateDisabled ? "" : `onclick="makeEditable(this, ${task.id}, 'start')"`;
+
+                // FIXED: Removed flex layout inside td so they respect table alignment
                 row.innerHTML = `
                     <td class="font-mono text-xs text-slate-400 font-bold text-center border-r border-slate-100">${task.id}</td>
-                    <td class="border-r border-slate-100 relative editable" onclick="openTaskModal(${task.id})">
-                        <div class="truncate-text font-medium text-slate-700 text-xs">${task.name}</div>
-                    </td>
-                    <td class="text-center font-mono text-xs text-slate-500 border-r border-slate-100">${task.parent || '-'}</td>
-                    <td class="text-center border-r border-slate-100">${typeBadge}</td>
-                    <td class="text-center font-mono text-xs text-slate-500 border-r border-slate-100">${task.dur}d</td>
-                    <td class="font-mono text-[10px] text-slate-500 border-r border-slate-100">${task.start}</td>
-                    <td class="font-mono text-[10px] text-slate-500 border-r border-slate-100">${endStr}</td>
-                    <td class="text-center border-r border-slate-100">
-                        <div class="flex items-center justify-center gap-1">
-                            <span class="text-[9px] font-bold text-slate-400">${task.pct}%</span>
+                    <td class="border-r border-slate-100 relative editable" style="height:40px;">
+                        <div class="flex items-center h-full">
+                            <span class="toggle-btn" style="visibility:${toggleVisibility}; margin-left:${paddingLeft - 16}px" onclick="toggleCollapse(${task.id}); event.stopPropagation();">${toggleIcon}</span>
+                            <div class="truncate-text font-medium text-slate-700 text-xs flex-grow" style="padding-left: 4px;" onclick="openTaskModal(${task.id})">${task.name}</div>
                         </div>
                     </td>
-                    <td class="text-center">
-                        <button onclick="openTaskModal(${task.id})" class="btn-icon inline-block"><svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg></button>
-                        <button onclick="deleteTask(${task.id})" class="btn-icon-danger inline-block"><svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
+                    <td class="text-center font-mono text-xs text-slate-500 border-r border-slate-100 editable" onclick="makeEditable(this, ${task.id}, 'parent')">${task.parent || '-'}</td>
+                    <td class="text-center font-mono text-xs text-slate-500 border-r border-slate-100 editable" onclick="makeEditable(this, ${task.id}, 'depType')">${task.depType || 'FS'}</td>
+                    <td class="text-center font-mono text-xs text-slate-500 border-r border-slate-100 editable" onclick="makeEditable(this, ${task.id}, 'dur')">${task.dur}d</td>
+                    <td class="font-mono text-[10px] text-slate-500 border-r border-slate-100 ${dateClass}" ${dateClick}>${task.start}</td>
+                    <td class="font-mono text-[10px] text-slate-500 border-r border-slate-100 bg-slate-50 text-slate-400 cursor-not-allowed" title="Auto-Calculated">${endStr}</td>
+                    <td class="text-center border-r border-slate-100 editable" onclick="makeEditable(this, ${task.id}, 'pct')">
+                        <span class="text-[9px] font-bold text-slate-400">${task.pct}%</span>
+                    </td>
+                    <td class="text-center border-r border-slate-100">
+                        <div class="flex items-center justify-center h-full gap-1">
+                            <button onclick="openTaskModal(${task.id}, 'edit')" class="btn-icon" title="Edit"><svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg></button>
+                            <button onclick="openTaskModal(${task.id}, 'subtask')" class="btn-icon text-indigo-600 font-bold" title="Add Child">↳</button>
+                            <button onclick="modifyIndent(${task.id}, -1)" class="btn-icon" title="Outdent">&larr;</button>
+                            <button onclick="modifyIndent(${task.id}, 1)" class="btn-icon" title="Indent">&rarr;</button>
+                            <button onclick="deleteTask(${task.id})" class="btn-icon-danger" title="Delete"><svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
+                        </div>
                     </td>
                 `;
                 tbody.appendChild(row);
             });
         }
+        
+        function makeEditable(cell, id, field) {
+            if (cell.querySelector('input, select') || cell.classList.contains('editing')) return;
+            const task = projectData.find(t => t.id === id);
+            if (!task) return;
+
+            const currentValue = task[field];
+            cell.classList.add('editing');
+            
+            let inputHTML = '';
+             if (field === 'start') {
+                inputHTML = `<input type="date" value="${currentValue}" onblur="commitEdit(${id}, '${field}', this.value)" onkeydown="if(event.key==='Enter') this.blur()">`;
+            } else if (field === 'depType') {
+                inputHTML = `<select onblur="commitEdit(${id}, '${field}', this.value)" class="w-full text-xs bg-slate-100">
+                    <option value="FS" ${currentValue==='FS'?'selected':''}>FS</option>
+                    <option value="SS" ${currentValue==='SS'?'selected':''}>SS</option>
+                    <option value="FF" ${currentValue==='FF'?'selected':''}>FF</option>
+                    <option value="SF" ${currentValue==='SF'?'selected':''}>SF</option>
+                </select>`;
+            } else if (field === 'name') {
+                inputHTML = `<input type="text" value="${currentValue}" onblur="commitEdit(${id}, '${field}', this.value)" onkeydown="if(event.key==='Enter') this.blur()">`;
+            } else {
+                inputHTML = `<input type="number" value="${currentValue}" onblur="commitEdit(${id}, '${field}', this.value)" onkeydown="if(event.key==='Enter') this.blur()">`;
+            }
+            
+            cell.innerHTML = inputHTML;
+            const input = cell.querySelector('input, select');
+            if(input) input.focus();
+        }
+
+        function commitEdit(id, field, value) {
+            const task = projectData.find(t => t.id === id);
+            if (!task) return;
+            
+            if (field === 'dur') task.dur = parseInt(value) || 0;
+            else if (field === 'pct') task.pct = Math.min(100, Math.max(0, parseInt(value) || 0));
+            else if (field === 'parent') task.parent = value ? parseInt(value) : null;
+            else if (field === 'depType') task.depType = value;
+            else if (field === 'start') task.start = value;
+            else task[field] = value;
+            
+            refreshView();
+        }
 
         let chartInstance = null;
-        function renderChart() {
-            const ROW_HEIGHT = 40; const HEADER_HEIGHT = 48;
-            document.getElementById('chart-container').style.height = `${(projectData.length * ROW_HEIGHT) + HEADER_HEIGHT}px`;
-            const ctx = document.getElementById('ganttCanvas').getContext('2d');
-            if (chartInstance) chartInstance.destroy();
+        let axisInstance = null;
 
-            const baselineData = projectData.map(t => {
+        function renderChart() {
+            if(projectData.length === 0) {
+                if(chartInstance) chartInstance.destroy();
+                if(axisInstance) axisInstance.destroy();
+                return;
+            }
+
+            const visibleTasks = [];
+            projectData.forEach((t, i) => { if(isRowVisible(i)) visibleTasks.push(t); });
+
+            const ROW_HEIGHT = 40; 
+            document.getElementById('chart-container').style.height = `${visibleTasks.length * ROW_HEIGHT}px`;
+            
+            const ctx = document.getElementById('ganttCanvas').getContext('2d');
+            const axisCtx = document.getElementById('axisCanvas').getContext('2d');
+
+            if (chartInstance) chartInstance.destroy();
+            if (axisInstance) axisInstance.destroy();
+
+            const baselineData = visibleTasks.map(t => {
                 if(!showBaseline) return { x: null, y: `Row ${t.id}` };
                 const s = new Date(t.baseStart);
                 const e = new Date(s.getTime() + ((t.baseDur || 0.5) * 86400000));
                 return { x: [s.getTime(), e.getTime()], y: `Row ${t.id}` };
             });
 
-            const actualData = projectData.map(t => {
+            const actualData = visibleTasks.map(t => {
                 const s = new Date(t.start);
-                // Give milestones a minimal "data" width for coordinates, but they will be transparent
                 const displayDur = t.type === 'Milestone' ? 0.5 : t.dur;
                 const e = new Date(s.getTime() + (displayDur * 86400000));
                 return { x: [s.getTime(), e.getTime()], y: `Row ${t.id}`, status: t.pct };
             });
 
+            // Width Calculation
+            const minDate = new Date("2026-01-08");
+            let maxDate = minDate;
+            projectData.forEach(t => {
+                const end = new Date(t.start);
+                end.setDate(end.getDate() + (t.dur || 1));
+                if (end > maxDate) maxDate = end;
+            });
+            maxDate = new Date(maxDate.getTime() + (45 * 86400000)); 
+
+            const daysSpan = (maxDate - minDate) / 86400000;
+            const requiredWidth = Math.max(1500, daysSpan * 20); 
+
+            document.getElementById('chart-container').style.width = `${requiredWidth}px`;
+            document.getElementById('axis-wrapper').style.width = `${requiredWidth}px`;
+
+            const sharedOptions = {
+                indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+                layout: { padding: { left: 0, right: 20 } },
+                plugins: { legend: { display: false }, tooltip: { enabled: true } },
+                scales: {
+                    x: { 
+                        type: 'time', time: { unit: 'week' }, 
+                        min: minDate.valueOf(), max: maxDate.valueOf(),
+                        grid: { color: '#E2E8F0' }, 
+                        ticks: { display: false } 
+                    },
+                    y: { display: false, grid: { display: false } }
+                }
+            };
+
+            // Main Chart
             chartInstance = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: projectData.map((_, i) => `Row ${projectData[i].id}`),
+                    labels: visibleTasks.map(t => `Row ${t.id}`),
                     datasets: [
                         { label: 'Baseline', data: baselineData, backgroundColor: '#94A3B8', barThickness: 4, grouped: false, order: 1 },
                         { label: 'Actual', data: actualData, backgroundColor: (ctx) => {
                             const dataIndex = ctx.dataIndex;
                             if (dataIndex === undefined || dataIndex < 0) return '#CBD5E1';
-                            const task = projectData[dataIndex];
-                            if (task.type === 'Milestone') return 'rgba(0,0,0,0)'; // Transparent bar for milestones
-                            
+                            const task = visibleTasks[dataIndex];
+                            if (task.type === 'Milestone') return 'rgba(0,0,0,0)'; 
                             const pct = ctx.raw?.status;
                             if(pct === 100) return '#10B981'; if(pct > 0) return '#F59E0B'; return '#CBD5E1';
                         }, borderRadius: 3, barPercentage: 0.6, grouped: false, order: 0 }
                     ]
                 },
                 options: {
-                    indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-                    layout: { padding: { top: 0, bottom: 0, left: 0, right: 20 } },
-                    plugins: { legend: { display: false }, tooltip: { enabled: true } },
-                    scales: {
-                        x: { type: 'time', time: { unit: 'week' }, position: 'top', min: '2026-01-08', grid: { color: '#F1F5F9' }, ticks: { font: { size: 10 }, color: '#94A3B8' } },
-                        y: { display: false, grid: { display: false } }
-                    }
+                    ...sharedOptions,
+                    layout: { padding: { top: 0, bottom: 0, left: 0, right: 20 } }
                 },
                 plugins: [{
-                    id: 'customRender',
-                    afterDatasetsDraw(chart) {
-                        const { ctx } = chart;
-                        const meta = chart.getDatasetMeta(1); // Actual dataset
+                    id: 'weekendHighlighter',
+                    beforeDraw(chart) {
+                        const { ctx, scales: { x } } = chart;
+                        const start = new Date(x.min);
+                        const end = new Date(x.max);
                         
-                        // 1. Draw Dependencies
-                        const idToIndex = {}; projectData.forEach((t, i) => idToIndex[t.id] = i);
+                        ctx.fillStyle = 'rgba(241, 245, 249, 0.4)'; // Slight gray for weekends
+                        
+                        // Loop days
+                        let current = new Date(start);
+                        while(current <= end) {
+                            const day = current.getDay();
+                            if(day === 0 || day === 6) { // Sun or Sat
+                                const xStart = x.getPixelForValue(current.getTime());
+                                const nextDay = new Date(current); nextDay.setDate(nextDay.getDate() + 1);
+                                const xEnd = x.getPixelForValue(nextDay.getTime());
+                                ctx.fillRect(xStart, 0, xEnd - xStart, chart.height);
+                            }
+                            current.setDate(current.getDate() + 1);
+                        }
+                    }
+                },
+                {
+                    id: 'dependencyLines',
+                    // Draw lines BEFORE datasets so they are behind the bars
+                    beforeDatasetsDraw(chart) {
+                        const { ctx } = chart;
+                        const meta = chart.getDatasetMeta(1); // Actual data
+                        const idToIndex = {}; visibleTasks.forEach((t, i) => idToIndex[t.id] = i);
+                        
                         ctx.save(); ctx.lineJoin = 'round'; ctx.lineCap = 'round';
-                        projectData.forEach((task, index) => {
+                        
+                        visibleTasks.forEach((task, index) => {
                             if (task.parent && idToIndex[task.parent] !== undefined) {
                                 const pIdx = idToIndex[task.parent];
+                                // Skip drawing if parent is hidden (collapsed) or logic implies root
+                                if (task.type === 'Milestone' || visibleTasks[pIdx].type === 'Milestone') return;
+
                                 const pBar = meta.data[pIdx];
                                 const cBar = meta.data[index];
                                 if (!pBar || !cBar) return;
 
                                 const isCrit = criticalPathSet.has(task.id) && criticalPathSet.has(task.parent);
-                                ctx.strokeStyle = isCrit ? '#9333EA' : '#CBD5E1';
-                                ctx.lineWidth = isCrit ? 2.5 : 1.5;
-                                if (!isCrit) ctx.setLineDash([]);
 
-                                // Calc positions
-                                const getCoord = (bar, side, type) => {
-                                    if (type === 'Milestone') return bar.base; // Milestone connect point is start
-                                    return side === 'left' ? bar.base : bar.x;
-                                };
+                                ctx.strokeStyle = isCrit ? '#9333EA' : '#94A3B8';
+                                ctx.lineWidth = isCrit ? 2 : 1;
+                                if (!isCrit) ctx.setLineDash([2, 4]); else ctx.setLineDash([]);
 
-                                const pType = projectData[pIdx].type;
-                                const cType = task.type;
-
-                                let startX, endX;
-                                const startY = pBar.y;
-                                const endY = cBar.y;
-
-                                // Dep Logic
-                                if (task.depType === 'SS' || task.depType === 'SF') startX = getCoord(pBar, 'left', pType);
-                                else startX = getCoord(pBar, 'right', pType);
-
-                                if (task.depType === 'FF' || task.depType === 'SF') endX = getCoord(cBar, 'right', cType);
-                                else endX = getCoord(cBar, 'left', cType);
-
-                                // Offsets
-                                if (startX === (pType==='Milestone'?pBar.base:pBar.x)) startX += 0; else startX -= 0;
-                                if (endX === (cType==='Milestone'?cBar.base:cBar.x)) endX += 4; else endX -= 4;
+                                const startY = pBar.y; const endY = cBar.y;
+                                
+                                // Simple FS logic for drawing (Connect Right of parent to Left of child)
+                                const startX = pBar.x; 
+                                const endX = cBar.base; 
 
                                 ctx.beginPath();
                                 ctx.moveTo(startX, startY);
                                 const cp1x = startX + 15; const cp2x = endX - 15;
                                 ctx.bezierCurveTo(cp1x, startY, cp2x, endY, endX, endY);
                                 ctx.stroke();
-
+                                
+                                // Arrowhead
                                 ctx.beginPath();
                                 ctx.fillStyle = ctx.strokeStyle;
                                 ctx.moveTo(endX, endY);
-                                ctx.lineTo(endX - 4, endY - 3);
-                                ctx.lineTo(endX - 4, endY + 3);
+                                ctx.lineTo(endX - 5, endY - 3);
+                                ctx.lineTo(endX - 5, endY + 3);
                                 ctx.fill();
                             }
                         });
 
-                        // 2. Draw Diamonds for Milestones
-                        projectData.forEach((task, index) => {
+                        // Draw Milestones (Diamonds)
+                        visibleTasks.forEach((task, index) => {
                             if (task.type === 'Milestone') {
                                 const bar = meta.data[index];
                                 if (!bar) return;
-                                const x = bar.base; // Draw at Start
+                                const x = bar.base; 
                                 const y = bar.y;
                                 const size = 6;
-                                
                                 ctx.beginPath();
-                                ctx.fillStyle = getStatusColor(task.pct);
+                                ctx.fillStyle = task.pct === 100 ? '#10B981' : '#F59E0B';
                                 ctx.moveTo(x, y - size);
                                 ctx.lineTo(x + size, y);
                                 ctx.lineTo(x, y + size);
                                 ctx.lineTo(x - size, y);
                                 ctx.fill();
-                                
-                                // Outline for visibility
-                                ctx.strokeStyle = '#1E293B';
-                                ctx.lineWidth = 1;
                                 ctx.stroke();
                             }
                         });
@@ -751,9 +1061,27 @@
                     }
                 }]
             });
+            
+            // Axis Chart (Header)
+            axisInstance = new Chart(axisCtx, {
+                type: 'bar',
+                data: { labels: [''], datasets: [] },
+                options: {
+                    ...sharedOptions,
+                    plugins: { legend: { display: false }, tooltip: { enabled: false } },
+                    scales: {
+                        x: { 
+                            type: 'time', time: { unit: 'week' }, 
+                            min: minDate.valueOf(), max: maxDate.valueOf(),
+                            position: 'top', 
+                            grid: { color: '#E2E8F0' }, 
+                            ticks: { font: { size: 10, weight: 'bold' }, color: '#64748B', maxRotation: 0, autoSkip: true } 
+                        },
+                        y: { display: false }
+                    }
+                }
+            });
         }
-        
-        function getStatusColor(pct) { if (pct === 100) return '#10B981'; if (pct > 0) return '#F59E0B'; return '#94A3B8'; }
     </script>
 </body>
 </html>
