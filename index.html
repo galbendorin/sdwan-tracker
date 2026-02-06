@@ -23,8 +23,8 @@
 
         /* Alignment Constants */
         :root {
-            --row-height: 40px;
-            --header-height: 48px;
+            --row-height: 36px; /* Compact row height */
+            --header-height: 40px;
         }
 
         /* FIXED: Removed display:flex to allow table-layout to control widths */
@@ -37,13 +37,13 @@
         table { width: 100%; border-collapse: collapse; table-layout: fixed; }
         
         th { 
-            white-space: nowrap; font-size: 0.7rem; color: #64748B; 
-            text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; text-align: left; padding: 0 6px;
+            white-space: nowrap; font-size: 0.65rem; color: #64748B; 
+            text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; text-align: left; padding: 0 4px;
             height: var(--header-height); background: #F8FAFC;
         }
         td { 
-            white-space: nowrap; font-size: 0.75rem; color: #334155; 
-            padding: 0 6px; vertical-align: middle; height: var(--row-height);
+            white-space: nowrap; font-size: 0.7rem; color: #334155; 
+            padding: 0 4px; vertical-align: middle; height: var(--row-height);
             overflow: hidden; text-overflow: ellipsis;
         }
         
@@ -51,20 +51,20 @@
         .editable { cursor: pointer; transition: background-color 0.15s; }
         .editable:hover { background-color: #F1F5F9; color: #4F46E5; }
         .editing { padding: 0 !important; }
-        .editing input, .editing select { width: 100%; height: 100%; border: 2px solid #6366F1; padding: 0 8px; font-size: 0.75rem; outline: none; background: #EEF2FF; }
+        .editing input, .editing select { width: 100%; height: 100%; border: 2px solid #6366F1; padding: 0 4px; font-size: 0.7rem; outline: none; background: #EEF2FF; }
 
         .truncate-text { max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
 
-        .btn-icon { padding: 4px; border-radius: 4px; color: #94A3B8; transition: all 0.2s; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+        .btn-icon { padding: 2px; border-radius: 4px; color: #94A3B8; transition: all 0.2s; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
         .btn-icon:hover { color: #6366F1; background-color: #EEF2FF; }
 
-        .btn-icon-green { padding: 4px; border-radius: 4px; color: #10B981; font-weight: bold; transition: all 0.2s; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+        .btn-icon-green { padding: 2px; border-radius: 4px; color: #10B981; font-weight: bold; transition: all 0.2s; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
         .btn-icon-green:hover { color: #047857; background-color: #ECFDF5; }
 
-        .btn-icon-danger { padding: 4px; border-radius: 4px; color: #94A3B8; transition: all 0.2s; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+        .btn-icon-danger { padding: 2px; border-radius: 4px; color: #94A3B8; transition: all 0.2s; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
         .btn-icon-danger:hover { color: #F43F5E; background-color: #FFF1F2; }
 
-        .toggle-btn { cursor: pointer; display: inline-block; width: 14px; text-align: center; color: #64748B; font-weight: bold; user-select: none; }
+        .toggle-btn { cursor: pointer; display: inline-block; width: 12px; text-align: center; color: #64748B; font-weight: bold; user-select: none; font-size: 10px; }
         .toggle-btn:hover { color: #4F46E5; }
 
         /* Modal Styles */
@@ -77,58 +77,58 @@
 <body>
 
     <!-- App Header -->
-    <header class="flex-none bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center z-30 shadow-sm">
-        <div class="flex items-center gap-3">
-            <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold">P</div>
+    <header class="flex-none bg-white border-b border-slate-200 px-4 py-3 flex justify-between items-center z-30 shadow-sm">
+        <div class="flex items-center gap-2">
+            <div class="w-7 h-7 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">P</div>
             <div>
-                <h1 class="text-lg font-bold text-slate-900 leading-tight">SD-WAN Project Plan</h1>
-                <p class="text-xs text-slate-500">Pro Gantt | <span id="task-count">0</span> Items</p>
+                <h1 class="text-base font-bold text-slate-900 leading-tight">SD-WAN Project Plan</h1>
+                <p class="text-[10px] text-slate-500">Pro Gantt | <span id="task-count">0</span> Items</p>
             </div>
         </div>
         
-        <div class="flex items-center gap-4">
+        <div class="flex items-center gap-3">
             <!-- Data Controls -->
             <div class="flex items-center gap-2 mr-2">
-                <button onclick="loadTemplate()" class="text-[10px] font-bold uppercase text-slate-600 hover:text-indigo-600 bg-white border border-slate-200 hover:border-indigo-200 px-3 py-1.5 rounded transition-colors flex items-center gap-1">
+                <button onclick="loadTemplate()" class="text-[10px] font-bold uppercase text-slate-600 hover:text-indigo-600 bg-white border border-slate-200 hover:border-indigo-200 px-2 py-1 rounded transition-colors flex items-center gap-1">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" /></svg>
                     Template
                 </button>
-                <button onclick="downloadCSV()" class="text-[10px] font-bold uppercase text-slate-600 hover:text-indigo-600 bg-white border border-slate-200 hover:border-indigo-200 px-3 py-1.5 rounded transition-colors flex items-center gap-1">
+                <button onclick="downloadCSV()" class="text-[10px] font-bold uppercase text-slate-600 hover:text-indigo-600 bg-white border border-slate-200 hover:border-indigo-200 px-2 py-1 rounded transition-colors flex items-center gap-1">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-                    Export CSV
+                    Export
                 </button>
-                <button onclick="document.getElementById('fileImport').click()" class="text-[10px] font-bold uppercase text-slate-600 hover:text-indigo-600 bg-white border border-slate-200 hover:border-indigo-200 px-3 py-1.5 rounded transition-colors flex items-center gap-1">
+                <button onclick="document.getElementById('fileImport').click()" class="text-[10px] font-bold uppercase text-slate-600 hover:text-indigo-600 bg-white border border-slate-200 hover:border-indigo-200 px-2 py-1 rounded transition-colors flex items-center gap-1">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
-                    Import CSV
+                    Import
                 </button>
                 <input type="file" id="fileImport" accept=".csv" class="hidden" onchange="importCSV(this)">
             </div>
 
             <!-- Baseline Controls -->
-            <div class="flex items-center gap-2 mr-4 border-l border-r border-slate-200 px-4">
-                <button onclick="setBaseline()" class="text-[10px] font-bold uppercase text-slate-500 hover:text-rose-600 bg-slate-50 hover:bg-rose-50 px-3 py-1.5 rounded transition-colors" title="Overwrite current baseline with active schedule">
-                    Re-Baseline
+            <div class="flex items-center gap-2 mr-2 border-l border-r border-slate-200 px-2">
+                <button onclick="setBaseline()" class="text-[10px] font-bold uppercase text-slate-500 hover:text-rose-600 bg-slate-50 hover:bg-rose-50 px-2 py-1 rounded transition-colors" title="Overwrite current baseline with active schedule">
+                    Re-Base
                 </button>
-                <label class="flex items-center gap-2 cursor-pointer select-none">
+                <label class="flex items-center gap-1 cursor-pointer select-none">
                     <input type="checkbox" id="showBaselineToggle" checked onchange="toggleBaseline()" class="form-checkbox h-3 w-3 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500">
-                    <span class="text-[10px] font-bold uppercase text-slate-500">Show Baseline</span>
+                    <span class="text-[10px] font-bold uppercase text-slate-500">Base</span>
                 </label>
             </div>
 
             <!-- Add Task Button -->
-            <button onclick="openTaskModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-2 px-4 rounded shadow-sm flex items-center gap-2 transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <button onclick="openTaskModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold py-1.5 px-3 rounded shadow-sm flex items-center gap-1 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                 </svg>
-                Add Task
+                Add
             </button>
 
             <!-- Report Button -->
-            <button onclick="openReportModal()" class="bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-2 px-4 rounded shadow-sm flex items-center gap-2 transition-colors ml-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <button onclick="openReportModal()" class="bg-red-600 hover:bg-red-700 text-white text-[10px] font-bold py-1.5 px-3 rounded shadow-sm flex items-center gap-1 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
-                Report/Request
+                Report
             </button>
         </div>
     </header>
@@ -137,23 +137,22 @@
     <main class="flex-grow flex overflow-hidden">
         
         <!-- LEFT: Data Table -->
-        <!-- FIXED: Increased panel width and added minimum width to table container -->
-        <div class="flex-none w-[60%] max-w-[1400px] border-r border-slate-200 bg-white flex flex-col shadow-[4px_0_24px_rgba(0,0,0,0.02)] z-20">
+        <!-- FIXED: Decreased panel width to 35% and min-width logic -->
+        <div class="flex-none w-[35%] min-w-[500px] border-r border-slate-200 bg-white flex flex-col shadow-[4px_0_24px_rgba(0,0,0,0.02)] z-20">
             <div class="flex-grow overflow-auto" id="grid-scroll">
-                <!-- FIXED: Min-width ensures columns don't crunch on small screens -->
-                <table class="w-full min-w-[1200px]">
+                <table class="w-full">
                     <thead class="gantt-header">
                         <tr>
-                            <!-- FIXED: Wider columns -->
-                            <th class="w-14 text-center">ID</th>
-                            <th>Task Name</th>
-                            <th class="w-16 text-center" title="Dependency">Dep</th>
-                            <th class="w-24 text-center" title="Dependency Type">Type</th>
-                            <th class="w-16 text-center">Dur</th>
-                            <th class="w-32">Start</th>
-                            <th class="w-32">Finish</th>
-                            <th class="w-16 text-center">%</th>
-                            <th class="w-48 text-center">Actions</th>
+                            <!-- FIXED: Very compact columns -->
+                            <th class="w-8 text-center">ID</th>
+                            <th>Name</th>
+                            <th class="w-10 text-center" title="Dependency">Dep</th>
+                            <th class="w-12 text-center" title="Dependency Type">Typ</th>
+                            <th class="w-10 text-center">Dur</th>
+                            <th class="w-20">Start</th>
+                            <th class="w-20">Finish</th>
+                            <th class="w-10 text-center">%</th>
+                            <th class="w-28 text-center">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="grid-body"></tbody>
@@ -164,7 +163,7 @@
         <!-- RIGHT: Gantt Chart -->
         <div class="flex-grow flex flex-col bg-white relative min-w-0 overflow-hidden">
             <!-- Timeline Header (Frozen) -->
-            <div id="chart-header-container" class="flex-none overflow-hidden bg-slate-50 border-b border-slate-200" style="height: 50px;">
+            <div id="chart-header-container" class="flex-none overflow-hidden bg-slate-50 border-b border-slate-200" style="height: 40px;">
                  <div id="axis-wrapper" class="relative"> 
                      <canvas id="axisCanvas"></canvas>
                  </div>
@@ -893,7 +892,7 @@
             const visibleTasks = [];
             projectData.forEach((t, i) => { if(isRowVisible(i)) visibleTasks.push(t); });
 
-            const ROW_HEIGHT = 40; 
+            const ROW_HEIGHT = 36; 
             document.getElementById('chart-container').style.height = `${visibleTasks.length * ROW_HEIGHT}px`;
             
             const ctx = document.getElementById('ganttCanvas').getContext('2d');
