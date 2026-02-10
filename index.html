@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SD-WAN Gantt Pro</title>
+    <title>SD-WAN Gantt Pro + RAID</title>
     <!-- Tailwind CSS (Dev Script) -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Chart.js & Date Adapter (Version Pinned for Stability) -->
@@ -84,6 +84,12 @@
         .toggle-btn { cursor: pointer; display: inline-block; width: 12px; text-align: center; color: #64748B; font-weight: bold; user-select: none; font-size: 10px; }
         .toggle-btn:hover { color: #4F46E5; }
 
+        /* RAID Tables Specifics */
+        .raid-table th { background-color: #F1F5F9; color: #475569; cursor: pointer; user-select: none; }
+        .raid-table th:hover { background-color: #E2E8F0; }
+        .raid-row:nth-child(even) { background-color: #FAFAFA; }
+        .sort-icon { display: inline-block; margin-left: 4px; width: 10px; font-weight: normal; color: #94A3B8; }
+        
         /* Modal Styles */
         .modal-overlay { 
             background-color: rgba(0, 0, 0, 0.2); 
@@ -104,50 +110,60 @@
         </div>
         
         <div class="flex items-center gap-3">
-            <!-- Data Controls -->
-            <div class="flex items-center gap-2 mr-2">
-                <button onclick="loadTemplate()" class="text-[10px] font-bold uppercase text-slate-600 hover:text-indigo-600 bg-white border border-slate-200 hover:border-indigo-200 px-2 py-1 rounded transition-colors flex items-center gap-1">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" /></svg>
-                    Template
+            
+            <!-- Contextual Controls: Schedule -->
+            <div id="controls-schedule" class="flex items-center gap-3">
+                <div class="flex items-center gap-2 mr-2">
+                    <button onclick="loadTemplate()" class="text-[10px] font-bold uppercase text-slate-600 hover:text-indigo-600 bg-white border border-slate-200 hover:border-indigo-200 px-2 py-1 rounded transition-colors flex items-center gap-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" /></svg>
+                        Template
+                    </button>
+                    <button onclick="downloadCSV()" class="text-[10px] font-bold uppercase text-slate-600 hover:text-indigo-600 bg-white border border-slate-200 hover:border-indigo-200 px-2 py-1 rounded transition-colors flex items-center gap-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                        Export
+                    </button>
+                    <button onclick="document.getElementById('fileImport').click()" class="text-[10px] font-bold uppercase text-slate-600 hover:text-indigo-600 bg-white border border-slate-200 hover:border-indigo-200 px-2 py-1 rounded transition-colors flex items-center gap-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                        Import
+                    </button>
+                    <input type="file" id="fileImport" accept=".csv" class="hidden" onchange="importCSV(this)">
+                </div>
+
+                <div class="flex items-center gap-2 mr-2 border-l border-r border-slate-200 px-2">
+                    <select onchange="setViewMode(this.value)" class="text-[10px] font-bold uppercase text-slate-600 bg-white border border-slate-200 hover:border-indigo-200 px-2 py-1 rounded transition-colors outline-none cursor-pointer">
+                        <option value="week" selected>1 Week</option>
+                        <option value="2week">2 Weeks</option>
+                        <option value="month">1 Month</option>
+                    </select>
+
+                    <button onclick="setBaseline()" class="text-[10px] font-bold uppercase text-slate-500 hover:text-rose-600 bg-slate-50 hover:bg-rose-50 px-2 py-1 rounded transition-colors" title="Overwrite current baseline with active schedule">
+                        Re-Base
+                    </button>
+                    <label class="flex items-center gap-1 cursor-pointer select-none">
+                        <input type="checkbox" id="showBaselineToggle" checked onchange="toggleBaseline()" class="form-checkbox h-3 w-3 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500">
+                        <span class="text-[10px] font-bold uppercase text-slate-500">Base</span>
+                    </label>
+                </div>
+
+                <button onclick="openTaskModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold py-1.5 px-3 rounded shadow-sm flex items-center gap-1 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                    Add Task
                 </button>
-                <button onclick="downloadCSV()" class="text-[10px] font-bold uppercase text-slate-600 hover:text-indigo-600 bg-white border border-slate-200 hover:border-indigo-200 px-2 py-1 rounded transition-colors flex items-center gap-1">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-                    Export
-                </button>
-                <button onclick="document.getElementById('fileImport').click()" class="text-[10px] font-bold uppercase text-slate-600 hover:text-indigo-600 bg-white border border-slate-200 hover:border-indigo-200 px-2 py-1 rounded transition-colors flex items-center gap-1">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
-                    Import
-                </button>
-                <input type="file" id="fileImport" accept=".csv" class="hidden" onchange="importCSV(this)">
             </div>
 
-            <!-- Baseline Controls -->
-            <div class="flex items-center gap-2 mr-2 border-l border-r border-slate-200 px-2">
-                <!-- NEW: Timeline View Dropdown -->
-                <select onchange="setViewMode(this.value)" class="text-[10px] font-bold uppercase text-slate-600 bg-white border border-slate-200 hover:border-indigo-200 px-2 py-1 rounded transition-colors outline-none cursor-pointer">
-                    <option value="week" selected>1 Week</option>
-                    <option value="2week">2 Weeks</option>
-                    <option value="month">1 Month</option>
-                </select>
-
-                <button onclick="setBaseline()" class="text-[10px] font-bold uppercase text-slate-500 hover:text-rose-600 bg-slate-50 hover:bg-rose-50 px-2 py-1 rounded transition-colors" title="Overwrite current baseline with active schedule">
-                    Re-Base
+            <!-- Contextual Controls: RAID (Hidden by default) -->
+            <div id="controls-raid" class="hidden flex items-center gap-3">
+                <button onclick="addRAIDItem()" id="btn-add-raid" class="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold py-1.5 px-3 rounded shadow-sm flex items-center gap-1 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                    Add Item
                 </button>
-                <label class="flex items-center gap-1 cursor-pointer select-none">
-                    <input type="checkbox" id="showBaselineToggle" checked onchange="toggleBaseline()" class="form-checkbox h-3 w-3 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500">
-                    <span class="text-[10px] font-bold uppercase text-slate-500">Base</span>
-                </label>
             </div>
 
-            <!-- Add Task Button -->
-            <button onclick="openTaskModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold py-1.5 px-3 rounded shadow-sm flex items-center gap-1 transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                </svg>
-                Add
-            </button>
-
-            <!-- Report Button -->
+            <!-- Global Controls -->
             <button onclick="openReportModal()" class="bg-red-600 hover:bg-red-700 text-white text-[10px] font-bold py-1.5 px-3 rounded shadow-sm flex items-center gap-1 transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -155,7 +171,6 @@
                 Report
             </button>
 
-            <!-- NEW: AI Assistant Button -->
             <button onclick="openAIModal()" class="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-[10px] font-bold py-1.5 px-3 rounded shadow-sm flex items-center gap-1 transition-all border border-indigo-400/30">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
                 AI Assistant
@@ -163,57 +178,303 @@
         </div>
     </header>
 
+    <!-- Navigation Tabs -->
+    <nav class="flex border-b border-slate-200 bg-white px-4 pt-1 shadow-[0_2px_4px_rgba(0,0,0,0.02)] z-20">
+        <button onclick="switchTab('schedule')" id="tab-schedule" class="px-4 py-2 text-xs font-bold uppercase tracking-wide border-b-2 transition-colors border-indigo-600 text-indigo-600">Schedule</button>
+        <button onclick="switchTab('risks')" id="tab-risks" class="px-4 py-2 text-xs font-bold uppercase tracking-wide border-b-2 transition-colors border-transparent text-slate-500 hover:text-slate-700">Risks</button>
+        <button onclick="switchTab('issues')" id="tab-issues" class="px-4 py-2 text-xs font-bold uppercase tracking-wide border-b-2 transition-colors border-transparent text-slate-500 hover:text-slate-700">Issues</button>
+        <button onclick="switchTab('changes')" id="tab-changes" class="px-4 py-2 text-xs font-bold uppercase tracking-wide border-b-2 transition-colors border-transparent text-slate-500 hover:text-slate-700">Change Log</button>
+        <button onclick="switchTab('comms')" id="tab-comms" class="px-4 py-2 text-xs font-bold uppercase tracking-wide border-b-2 transition-colors border-transparent text-slate-500 hover:text-slate-700">Comms Plan</button>
+        <button onclick="switchTab('actions')" id="tab-actions" class="px-4 py-2 text-xs font-bold uppercase tracking-wide border-b-2 transition-colors border-transparent text-slate-500 hover:text-slate-700">Actions</button>
+    </nav>
+
     <!-- Main Workspace -->
-    <main class="flex-grow flex overflow-hidden" id="main-container">
+    <main class="flex-grow flex overflow-hidden relative">
         
-        <!-- LEFT: Data Table -->
-        <!-- MODIFIED: Added ID, removed fixed width classes, added inline style for dynamic resizing -->
-        <div id="left-panel" class="flex-none border-r border-slate-200 bg-white flex flex-col shadow-[4px_0_24px_rgba(0,0,0,0.02)] z-20" style="width: 35%; min-width: 200px;">
-            <div class="flex-grow overflow-auto" id="grid-scroll">
-                <table class="w-full">
-                    <thead class="gantt-header">
+        <!-- VIEW: SCHEDULE (Split Pane) -->
+        <div id="view-schedule" class="flex-grow flex overflow-hidden w-full h-full absolute inset-0 bg-white">
+            <!-- LEFT: Data Table -->
+            <div id="left-panel" class="flex-none border-r border-slate-200 bg-white flex flex-col shadow-[4px_0_24px_rgba(0,0,0,0.02)] z-20" style="width: 35%; min-width: 200px;">
+                <div class="flex-grow overflow-auto" id="grid-scroll">
+                    <!-- FIXED: Added min-w-[800px] to prevent Name column from collapsing -->
+                    <table class="w-full min-w-[800px]">
+                        <thead class="gantt-header">
+                            <tr>
+                                <th class="w-8 text-center">ID</th>
+                                <th>Name</th>
+                                <th class="w-10 text-center" title="Dependency">Dep</th>
+                                <th class="w-12 text-center" title="Dependency Type">Typ</th>
+                                <th class="w-10 text-center">Dur</th>
+                                <th class="w-24">Start</th>
+                                <th class="w-24">Finish</th>
+                                <th class="w-10 text-center">%</th>
+                                <!-- New Track Column -->
+                                <th class="w-10 text-center" title="Track as Action">Track</th>
+                                <th class="w-28 text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="grid-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Resizer Handle -->
+            <div id="panel-resizer" class="w-1 bg-slate-200 hover:bg-indigo-500 cursor-col-resize z-30 transition-colors flex-none"></div>
+
+            <!-- RIGHT: Gantt Chart -->
+            <div class="flex-grow flex flex-col bg-white relative min-w-0 overflow-hidden">
+                <div id="chart-header-container" class="flex-none overflow-hidden bg-slate-50 border-b border-slate-200" style="height: 40px;">
+                     <div id="axis-wrapper" class="relative"> 
+                         <canvas id="axisCanvas"></canvas>
+                     </div>
+                </div>
+                <div class="flex-grow overflow-auto" id="chart-scroll">
+                    <div id="chart-container" class="relative">
+                        <canvas id="ganttCanvas"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW: RISKS (Now Amber) -->
+        <div id="view-risks" class="hidden w-full h-full absolute inset-0 bg-slate-50 p-6 overflow-auto">
+            <div class="max-w-6xl mx-auto bg-white rounded-lg shadow-sm border border-slate-200 flex flex-col min-h-[500px]">
+                <div class="px-6 py-4 border-b border-slate-200 bg-amber-50 flex justify-between items-center">
+                    <div class="flex items-center gap-4">
+                        <h2 class="text-lg font-bold text-amber-800">Risk Register</h2>
+                        <span class="text-xs text-amber-600 font-medium bg-amber-100 px-2 py-1 rounded">PRINCE2 Compliant</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <!-- UPDATED: GTT Mode Button (Default Active) -->
+                        <button id="btn-gtt-view-risks" onclick="toggleGTTView('risks')" class="flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wide border border-amber-600 bg-amber-600 text-white shadow-sm transition-all">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                            GTT Mode
+                        </button>
+                        <div class="h-4 w-px bg-amber-200 mx-1"></div>
+                        <!-- Status Filter -->
+                        <select id="status-filter-risks" onchange="applyRAIDFilter('risks')" class="px-2 py-1.5 text-xs border border-amber-200 rounded focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white cursor-pointer">
+                            <option value="All">All Status</option>
+                        </select>
+                        <input id="search-text-risks" type="text" placeholder="Search..." onkeyup="applyRAIDFilter('risks')" class="px-3 py-1.5 text-xs border border-amber-200 rounded focus:outline-none focus:ring-2 focus:ring-amber-500 w-48">
+                    </div>
+                </div>
+                <table class="w-full text-left border-collapse raid-table">
+                    <thead class="bg-slate-50 text-xs uppercase font-bold text-slate-500">
                         <tr>
-                            <!-- Column Headers with Resizing Logic via JS -->
-                            <th class="w-8 text-center">ID</th>
-                            <th>Name</th>
-                            <th class="w-10 text-center" title="Dependency">Dep</th>
-                            <th class="w-12 text-center" title="Dependency Type">Typ</th>
-                            <th class="w-10 text-center">Dur</th>
-                            <th class="w-24">Start</th>
-                            <th class="w-24">Finish</th>
-                            <th class="w-10 text-center">%</th>
-                            <th class="w-28 text-center">Actions</th>
+                            <th class="p-3 border-b w-12 text-center" onclick="sortRAID('risks', 'id')">ID <span id="sort-icon-risks-id" class="sort-icon sort-icon-risks">⇅</span></th>
+                            <!-- Icon Header for Internal -->
+                            <th class="p-3 border-b w-10 text-center" title="Toggle Internal/Public Visibility">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mx-auto text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>
+                            </th>
+                            <th class="p-3 border-b" onclick="sortRAID('risks', 'desc')">Description <span id="sort-icon-risks-desc" class="sort-icon sort-icon-risks">⇅</span></th>
+                            <th class="p-3 border-b w-24" onclick="sortRAID('risks', 'prob')">Probability <span id="sort-icon-risks-prob" class="sort-icon sort-icon-risks">⇅</span></th>
+                            <th class="p-3 border-b w-24" onclick="sortRAID('risks', 'impact')">Impact <span id="sort-icon-risks-impact" class="sort-icon sort-icon-risks">⇅</span></th>
+                            <th class="p-3 border-b w-32" onclick="sortRAID('risks', 'response')">Response <span id="sort-icon-risks-response" class="sort-icon sort-icon-risks">⇅</span></th>
+                            <th class="p-3 border-b w-32" onclick="sortRAID('risks', 'owner')">Owner <span id="sort-icon-risks-owner" class="sort-icon sort-icon-risks">⇅</span></th>
+                            <th class="p-3 border-b w-24" onclick="sortRAID('risks', 'status')">Status <span id="sort-icon-risks-status" class="sort-icon sort-icon-risks">⇅</span></th>
+                            <th class="p-3 border-b w-20 text-center">Act</th>
                         </tr>
                     </thead>
-                    <tbody id="grid-body"></tbody>
+                    <tbody id="tbody-risks"></tbody>
                 </table>
             </div>
         </div>
 
-        <!-- NEW: Resizer Handle -->
-        <div id="panel-resizer" class="w-1 bg-slate-200 hover:bg-indigo-500 cursor-col-resize z-30 transition-colors flex-none"></div>
-
-        <!-- RIGHT: Gantt Chart -->
-        <div class="flex-grow flex flex-col bg-white relative min-w-0 overflow-hidden">
-            <!-- Timeline Header (Frozen) -->
-            <div id="chart-header-container" class="flex-none overflow-hidden bg-slate-50 border-b border-slate-200" style="height: 40px;">
-                 <div id="axis-wrapper" class="relative"> 
-                     <canvas id="axisCanvas"></canvas>
-                 </div>
-            </div>
-
-            <!-- Scrollable Timeline Body -->
-            <div class="flex-grow overflow-auto" id="chart-scroll">
-                <div id="chart-container" class="relative">
-                    <canvas id="ganttCanvas"></canvas>
+        <!-- VIEW: ISSUES (Now Red) -->
+        <div id="view-issues" class="hidden w-full h-full absolute inset-0 bg-slate-50 p-6 overflow-auto">
+            <div class="max-w-6xl mx-auto bg-white rounded-lg shadow-sm border border-slate-200 flex flex-col min-h-[500px]">
+                <div class="px-6 py-4 border-b border-slate-200 bg-red-50 flex justify-between items-center">
+                    <div class="flex items-center gap-4">
+                        <h2 class="text-lg font-bold text-red-800">Issue Register</h2>
+                        <span class="text-xs text-red-600 font-medium bg-red-100 px-2 py-1 rounded">Tracking</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <!-- UPDATED: GTT Mode Button -->
+                        <button id="btn-gtt-view-issues" onclick="toggleGTTView('issues')" class="flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wide border border-red-600 bg-red-600 text-white shadow-sm transition-all">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                            GTT Mode
+                        </button>
+                        <div class="h-4 w-px bg-red-200 mx-1"></div>
+                        <!-- Status Filter -->
+                        <select id="status-filter-issues" onchange="applyRAIDFilter('issues')" class="px-2 py-1.5 text-xs border border-red-200 rounded focus:outline-none focus:ring-2 focus:ring-red-500 bg-white cursor-pointer">
+                            <option value="All">All Status</option>
+                        </select>
+                        <input id="search-text-issues" type="text" placeholder="Search..." onkeyup="applyRAIDFilter('issues')" class="px-3 py-1.5 text-xs border border-red-200 rounded focus:outline-none focus:ring-2 focus:ring-red-500 w-48">
+                    </div>
                 </div>
+                <table class="w-full text-left border-collapse raid-table">
+                    <thead class="bg-slate-50 text-xs uppercase font-bold text-slate-500">
+                        <tr>
+                            <th class="p-3 border-b w-12 text-center" onclick="sortRAID('issues', 'id')">ID <span id="sort-icon-issues-id" class="sort-icon sort-icon-issues">⇅</span></th>
+                            <!-- Icon Header -->
+                            <th class="p-3 border-b w-10 text-center" title="Toggle Internal/Public Visibility">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mx-auto text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>
+                            </th>
+                            <th class="p-3 border-b" onclick="sortRAID('issues', 'desc')">Description <span id="sort-icon-issues-desc" class="sort-icon sort-icon-issues">⇅</span></th>
+                            <th class="p-3 border-b w-24" onclick="sortRAID('issues', 'priority')">Priority <span id="sort-icon-issues-priority" class="sort-icon sort-icon-issues">⇅</span></th>
+                            <th class="p-3 border-b w-24" onclick="sortRAID('issues', 'sev')">Severity <span id="sort-icon-issues-sev" class="sort-icon sort-icon-issues">⇅</span></th>
+                            <th class="p-3 border-b w-32" onclick="sortRAID('issues', 'owner')">Owner <span id="sort-icon-issues-owner" class="sort-icon sort-icon-issues">⇅</span></th>
+                            <th class="p-3 border-b w-32" onclick="sortRAID('issues', 'raised')">Date Raised <span id="sort-icon-issues-raised" class="sort-icon sort-icon-issues">⇅</span></th>
+                            <th class="p-3 border-b w-24" onclick="sortRAID('issues', 'status')">Status <span id="sort-icon-issues-status" class="sort-icon sort-icon-issues">⇅</span></th>
+                            <th class="p-3 border-b w-20 text-center">Act</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-issues"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- VIEW: CHANGES -->
+        <div id="view-changes" class="hidden w-full h-full absolute inset-0 bg-slate-50 p-6 overflow-auto">
+            <div class="max-w-6xl mx-auto bg-white rounded-lg shadow-sm border border-slate-200 flex flex-col min-h-[500px]">
+                <div class="px-6 py-4 border-b border-slate-200 bg-blue-50 flex justify-between items-center">
+                    <div class="flex items-center gap-4">
+                        <h2 class="text-lg font-bold text-blue-800">Change Log</h2>
+                        <span class="text-xs text-blue-600 font-medium bg-blue-100 px-2 py-1 rounded">Change Control</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                         <!-- UPDATED: GTT Mode Button -->
+                         <button id="btn-gtt-view-changes" onclick="toggleGTTView('changes')" class="flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wide border border-blue-600 bg-blue-600 text-white shadow-sm transition-all">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                            GTT Mode
+                        </button>
+                        <div class="h-4 w-px bg-blue-200 mx-1"></div>
+                         <!-- Status Filter -->
+                         <select id="status-filter-changes" onchange="applyRAIDFilter('changes')" class="px-2 py-1.5 text-xs border border-blue-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white cursor-pointer">
+                            <option value="All">All Status</option>
+                        </select>
+                        <input id="search-text-changes" type="text" placeholder="Search..." onkeyup="applyRAIDFilter('changes')" class="px-3 py-1.5 text-xs border border-blue-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 w-48">
+                    </div>
+                </div>
+                <table class="w-full text-left border-collapse raid-table">
+                    <thead class="bg-slate-50 text-xs uppercase font-bold text-slate-500">
+                        <tr>
+                            <th class="p-3 border-b w-12 text-center" onclick="sortRAID('changes', 'id')">ID <span id="sort-icon-changes-id" class="sort-icon sort-icon-changes">⇅</span></th>
+                            <!-- Icon Header -->
+                            <th class="p-3 border-b w-10 text-center" title="Toggle Internal/Public Visibility">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mx-auto text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>
+                            </th>
+                            <th class="p-3 border-b" onclick="sortRAID('changes', 'desc')">Change Request / Description <span id="sort-icon-changes-desc" class="sort-icon sort-icon-changes">⇅</span></th>
+                            <th class="p-3 border-b w-32" onclick="sortRAID('changes', 'raisedBy')">Raised By <span id="sort-icon-changes-raisedBy" class="sort-icon sort-icon-changes">⇅</span></th>
+                            <th class="p-3 border-b w-24" onclick="sortRAID('changes', 'cost')">Cost Impact <span id="sort-icon-changes-cost" class="sort-icon sort-icon-changes">⇅</span></th>
+                            <th class="p-3 border-b w-24" onclick="sortRAID('changes', 'time')">Time Impact <span id="sort-icon-changes-time" class="sort-icon sort-icon-changes">⇅</span></th>
+                            <th class="p-3 border-b w-32" onclick="sortRAID('changes', 'status')">Status <span id="sort-icon-changes-status" class="sort-icon sort-icon-changes">⇅</span></th>
+                            <th class="p-3 border-b w-20 text-center">Act</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-changes"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- VIEW: COMMS -->
+        <div id="view-comms" class="hidden w-full h-full absolute inset-0 bg-slate-50 p-6 overflow-auto">
+            <div class="max-w-6xl mx-auto bg-white rounded-lg shadow-sm border border-slate-200 flex flex-col min-h-[500px]">
+                <div class="px-6 py-4 border-b border-slate-200 bg-indigo-50 flex justify-between items-center">
+                    <div class="flex items-center gap-4">
+                        <h2 class="text-lg font-bold text-indigo-800">Communication Plan</h2>
+                        <span class="text-xs text-indigo-600 font-medium bg-indigo-100 px-2 py-1 rounded">Stakeholders</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <!-- UPDATED: GTT Mode Button -->
+                        <button id="btn-gtt-view-comms" onclick="toggleGTTView('comms')" class="flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wide border border-indigo-600 bg-indigo-600 text-white shadow-sm transition-all">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                            GTT Mode
+                        </button>
+                        <div class="h-4 w-px bg-indigo-200 mx-1"></div>
+                        <!-- No Status column in Comms usually, so just search -->
+                        <input id="search-text-comms" type="text" placeholder="Search comms..." onkeyup="applyRAIDFilter('comms')" class="px-3 py-1.5 text-xs border border-indigo-200 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 w-48">
+                    </div>
+                </div>
+                <table class="w-full text-left border-collapse raid-table">
+                    <thead class="bg-slate-50 text-xs uppercase font-bold text-slate-500">
+                        <tr>
+                            <th class="p-3 border-b w-12 text-center" onclick="sortRAID('comms', 'id')">ID <span id="sort-icon-comms-id" class="sort-icon sort-icon-comms">⇅</span></th>
+                            <!-- Icon Header -->
+                            <th class="p-3 border-b w-10 text-center" title="Toggle Internal/Public Visibility">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mx-auto text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>
+                            </th>
+                            <th class="p-3 border-b w-48" onclick="sortRAID('comms', 'stake')">Stakeholder / Audience <span id="sort-icon-comms-stake" class="sort-icon sort-icon-comms">⇅</span></th>
+                            <th class="p-3 border-b" onclick="sortRAID('comms', 'info')">Information Required <span id="sort-icon-comms-info" class="sort-icon sort-icon-comms">⇅</span></th>
+                            <th class="p-3 border-b w-32" onclick="sortRAID('comms', 'freq')">Frequency <span id="sort-icon-comms-freq" class="sort-icon sort-icon-comms">⇅</span></th>
+                            <th class="p-3 border-b w-32" onclick="sortRAID('comms', 'method')">Method <span id="sort-icon-comms-method" class="sort-icon sort-icon-comms">⇅</span></th>
+                            <th class="p-3 border-b w-32" onclick="sortRAID('comms', 'provider')">Provider <span id="sort-icon-comms-provider" class="sort-icon sort-icon-comms">⇅</span></th>
+                            <th class="p-3 border-b w-20 text-center">Act</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-comms"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- VIEW: ACTIONS -->
+        <div id="view-actions" class="hidden w-full h-full absolute inset-0 bg-slate-50 p-6 overflow-auto">
+            <div class="max-w-6xl mx-auto bg-white rounded-lg shadow-sm border border-slate-200 flex flex-col min-h-[500px]">
+                <div class="px-6 py-4 border-b border-slate-200 bg-emerald-50 flex justify-between items-center">
+                    <div class="flex items-center gap-4">
+                        <h2 class="text-lg font-bold text-emerald-800">Action Items</h2>
+                        <span class="text-xs text-emerald-600 font-medium bg-emerald-100 px-2 py-1 rounded">Project Actions</span>
+                    </div>
+                     <div class="flex items-center gap-3">
+                        <!-- UPDATED: GTT Mode Button -->
+                        <button id="btn-gtt-view-actions" onclick="toggleGTTView('actions')" class="flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wide border border-emerald-600 bg-emerald-600 text-white shadow-sm transition-all">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                            GTT Mode
+                        </button>
+                        <div class="h-4 w-px bg-emerald-200 mx-1"></div>
+                        <!-- Status Filter -->
+                        <select id="status-filter-actions" onchange="applyRAIDFilter('actions')" class="px-2 py-1.5 text-xs border border-emerald-200 rounded focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white cursor-pointer">
+                            <option value="All">All Status</option>
+                        </select>
+                        <input id="search-text-actions" type="text" placeholder="Search..." onkeyup="applyRAIDFilter('actions')" class="px-3 py-1.5 text-xs border border-emerald-200 rounded focus:outline-none focus:ring-2 focus:ring-emerald-500 w-48">
+                    </div>
+                </div>
+                <table class="w-full text-left border-collapse raid-table">
+                    <thead class="bg-slate-50 text-xs uppercase font-bold text-slate-500">
+                        <tr>
+                            <th class="p-3 border-b w-12 text-center" onclick="sortRAID('actions', 'id')">ID <span id="sort-icon-actions-id" class="sort-icon sort-icon-actions">⇅</span></th>
+                            <!-- Icon Header -->
+                            <th class="p-3 border-b w-10 text-center" title="Toggle Internal/Public Visibility">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mx-auto text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>
+                            </th>
+                            <th class="p-3 border-b" onclick="sortRAID('actions', 'desc')">Action Description <span id="sort-icon-actions-desc" class="sort-icon sort-icon-actions">⇅</span></th>
+                            <th class="p-3 border-b w-32" onclick="sortRAID('actions', 'owner')">Owner <span id="sort-icon-actions-owner" class="sort-icon sort-icon-actions">⇅</span></th>
+                            <th class="p-3 border-b w-32" onclick="sortRAID('actions', 'due')">Due Date <span id="sort-icon-actions-due" class="sort-icon sort-icon-actions">⇅</span></th>
+                            <th class="p-3 border-b w-32" onclick="sortRAID('actions', 'status')">Status <span id="sort-icon-actions-status" class="sort-icon sort-icon-actions">⇅</span></th>
+                            <th class="p-3 border-b w-20 text-center">Act</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-actions"></tbody>
+                </table>
             </div>
         </div>
 
     </main>
 
+    <!-- NEW: Custom Delete Confirmation Modal (Bypasses window.confirm restrictions) -->
+    <div id="deleteConfirmModal" class="hidden fixed inset-0 z-[60] flex items-center justify-center modal-overlay">
+        <div class="bg-white rounded-lg shadow-xl w-80 p-6 border border-slate-200">
+            <div class="text-center">
+                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+                    <svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                </div>
+                <h3 class="text-lg leading-6 font-medium text-slate-900">Delete Item?</h3>
+                <div class="mt-2">
+                    <p class="text-sm text-slate-500">Are you sure you want to delete this item? This action cannot be undone.</p>
+                </div>
+            </div>
+            <div class="mt-5 flex justify-center gap-3">
+                <button onclick="closeDeleteModal()" class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded hover:bg-slate-50">Cancel</button>
+                <button id="confirmDeleteBtn" class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded hover:bg-red-700">Delete</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal (Only for Add New) -->
     <div id="taskModal" class="hidden fixed inset-0 z-50 flex items-center justify-center modal-overlay">
+        <!-- ... (Existing Task Modal Content - unchanged) ... -->
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden transform transition-all scale-100 m-4 border border-slate-200">
             <div class="bg-slate-50 px-6 py-4 border-b border-slate-100 flex justify-between items-center">
                 <h3 class="text-lg font-bold text-slate-800" id="modalTitle">Add New Task</h3>
@@ -289,9 +550,9 @@
         </div>
     </div>
 
-    <!-- Report Modal -->
+    <!-- Report & AI Modals (Existing) -->
+    <!-- ... (Report Modal - same as before) ... -->
     <div id="reportModal" class="hidden fixed inset-0 z-50 flex items-center justify-center modal-overlay">
-        <!-- ... existing report modal content ... -->
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all scale-100 m-4 border border-slate-200">
             <div class="bg-red-50 px-6 py-4 border-b border-red-100 flex justify-between items-center">
                 <h3 class="text-lg font-bold text-red-800">Report Issue / Request</h3>
@@ -314,7 +575,7 @@
         </div>
     </div>
 
-    <!-- NEW: AI Assistant Modal -->
+    <!-- ... (AI Modal - same as before) ... -->
     <div id="aiModal" class="hidden fixed inset-0 z-50 flex items-center justify-center modal-overlay">
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden transform transition-all scale-100 m-4 border border-indigo-200 flex flex-col max-h-[90vh]">
             <div class="bg-gradient-to-r from-purple-50 to-indigo-50 px-6 py-4 border-b border-indigo-100 flex justify-between items-center flex-none">
@@ -379,8 +640,41 @@
         let projectData = []; 
         let collapsedParents = new Set(); // To track collapsed rows
         let viewMode = 'week'; // Default view mode
+        let currentTab = 'schedule';
 
-        // --- TEMPLATE DATA ---
+        // SORT & FILTER STATE
+        let raidState = {
+            // FIXED: Default to gttMode: true (Show All)
+            risks: { sortCol: 'id', sortDir: 'asc', filter: '', statusFilter: 'All', gttMode: true },
+            issues: { sortCol: 'id', sortDir: 'asc', filter: '', statusFilter: 'All', gttMode: true },
+            changes: { sortCol: 'id', sortDir: 'asc', filter: '', statusFilter: 'All', gttMode: true },
+            comms: { sortCol: 'id', sortDir: 'asc', filter: '', statusFilter: 'All', gttMode: true },
+            actions: { sortCol: 'id', sortDir: 'asc', filter: '', statusFilter: 'All', gttMode: true }
+        };
+
+        // RAID DATASETS (Sample PRINCE2 Data)
+        // Added internal: false/true to items
+        let raidData = {
+            risks: [
+                { id: 1, desc: "Hardware shipment delayed by customs", prob: "High", impact: "High", response: "Use backup stock", owner: "Logistics Mgr", status: "Open", internal: false },
+                { id: 2, desc: "Internal resourcing conflict for Project Mgr", prob: "Med", impact: "Med", response: "Escalate to PMO", owner: "Program Dir", status: "Open", internal: true }
+            ],
+            issues: [
+                { id: 1, desc: "Incorrect cabling in Site 3", priority: "High", sev: "Major", owner: "Install Team", raised: "2026-03-28", status: "Open", internal: false }
+            ],
+            changes: [
+                { id: 1, desc: "Add secondary 5G link to HQ", raisedBy: "Client CTO", cost: "$5,000", time: "+5 Days", status: "Pending", internal: false }
+            ],
+            comms: [
+                { id: 1, stake: "Project Board", info: "Status Report", freq: "Weekly", method: "Email/PDF", provider: "PM", internal: false },
+                { id: 2, stake: "Internal Tech Team", info: "Technical Deep Dive", freq: "Daily", method: "Standup", provider: "Tech Lead", internal: true }
+            ],
+            actions: [
+                { id: 1, desc: "Prepare Steering Committee Slides", owner: "PM", due: "2026-02-15", status: "In Progress", internal: false }
+            ]
+        };
+
+        // --- TEMPLATE DATA (Gantt) ---
         const templateData = [
             { id: 1, name: "Project Plan", type: "root", parent: null, depType: "FS", dur: 0, start: "2026-01-08", pct: 0, indent: 0 },
             { id: 2, name: "Project Milestones", type: "Task", parent: null, depType: "FS", dur: 0, start: "2026-01-08", pct: 0, indent: 1 },
@@ -481,6 +775,45 @@
                 if (!t.depType) t.depType = "FS"; 
                 if (t.indent === undefined) t.indent = 0;
             });
+            // Init dropdowns
+            ['risks', 'issues', 'changes', 'actions'].forEach(updateStatusDropdown);
+        }
+
+        // --- TABS LOGIC ---
+        function switchTab(tabId) {
+            currentTab = tabId;
+            // Update Tab Styles
+            ['schedule', 'risks', 'issues', 'changes', 'comms', 'actions'].forEach(t => {
+                const btn = document.getElementById(`tab-${t}`);
+                if (t === tabId) {
+                    btn.classList.remove('border-transparent', 'text-slate-500');
+                    btn.classList.add('border-indigo-600', 'text-indigo-600');
+                } else {
+                    btn.classList.add('border-transparent', 'text-slate-500');
+                    btn.classList.remove('border-indigo-600', 'text-indigo-600');
+                }
+                
+                // Hide/Show Content Views
+                const view = document.getElementById(`view-${t}`);
+                if(view) {
+                    if (t === tabId) view.classList.remove('hidden'); 
+                    else view.classList.add('hidden');
+                }
+            });
+
+            // Toggle Header Controls
+            const schedControls = document.getElementById('controls-schedule');
+            const raidControls = document.getElementById('controls-raid');
+            
+            if (tabId === 'schedule') {
+                schedControls.classList.remove('hidden');
+                raidControls.classList.add('hidden');
+                refreshView();
+            } else {
+                schedControls.classList.add('hidden');
+                raidControls.classList.remove('hidden');
+                renderRAIDTable(tabId);
+            }
         }
 
         // --- RESIZING LOGIC ---
@@ -532,8 +865,10 @@
         function enablePanelResizing() {
             const resizer = document.getElementById('panel-resizer');
             const leftPanel = document.getElementById('left-panel');
-            const mainContainer = document.getElementById('main-container');
+            const mainContainer = document.getElementById('view-schedule'); // Fix: Resize within schedule view
             let isResizing = false;
+
+            if(!resizer || !leftPanel || !mainContainer) return;
 
             resizer.addEventListener('mousedown', (e) => {
                 isResizing = true;
@@ -705,6 +1040,35 @@
             }
             return true;
         }
+
+        // --- NEW: Toggle Task Action ---
+        window.toggleTaskAction = function(taskId, isChecked) {
+            const task = projectData.find(t => t.id === taskId);
+            if (!task) return;
+
+            if (isChecked) {
+                // Create Action
+                const endDate = new Date(new Date(task.start).getTime() + (task.dur * 86400000)).toISOString().split('T')[0];
+                const newAction = {
+                    id: Date.now(),
+                    desc: task.name,
+                    owner: "PM", // Default
+                    due: endDate,
+                    status: "Pending",
+                    linkedTaskId: taskId
+                };
+                task.linkedActionId = newAction.id;
+                if (!raidData.actions) raidData.actions = [];
+                raidData.actions.push(newAction);
+            } else {
+                // Remove Action
+                if (task.linkedActionId && raidData.actions) {
+                    raidData.actions = raidData.actions.filter(a => a.id !== task.linkedActionId);
+                    task.linkedActionId = null;
+                }
+            }
+            updateStatusDropdown('actions');
+        };
 
         // --- IMPORT/EXPORT ---
         function downloadCSV() {
@@ -1072,24 +1436,323 @@
             } catch(err) { console.error(err); alert("Error saving task"); }
         }
 
+        // FIXED: Replaced native confirm with custom modal trigger for Gantt
         function deleteTask(id) {
-            if(confirm("Delete Task?")) {
+            window.openConfirmModal(`Delete Task ID: ${id}?`, () => {
                 const idx = projectData.findIndex(t => t.id === id);
                 if (idx > -1) { 
-                    // Orphan prevention: Update any children of this task to have no parent
                     projectData.forEach(t => { if(t.parent === id) t.parent = null; });
                     projectData.splice(idx, 1); 
                     refreshView(); 
                 }
+            });
+        }
+
+        // --- NEW: Custom Delete Modal Logic ---
+        let pendingDeleteCallback = null;
+
+        window.openConfirmModal = function(msg, callback) {
+            document.querySelector('#deleteConfirmModal h3').innerText = "Confirm Delete";
+            document.querySelector('#deleteConfirmModal p').innerText = msg;
+            pendingDeleteCallback = callback;
+            document.getElementById('deleteConfirmModal').classList.remove('hidden');
+        };
+
+        window.closeDeleteModal = function() {
+            document.getElementById('deleteConfirmModal').classList.add('hidden');
+            pendingDeleteCallback = null;
+        };
+
+        // Attach listener to the generic confirm button in modal
+        document.getElementById('confirmDeleteBtn').onclick = function() {
+            if (pendingDeleteCallback) pendingDeleteCallback();
+            window.closeDeleteModal();
+        };
+
+        // --- RAID CRUD & RENDER ---
+        window.addRAIDItem = function() {
+            const table = currentTab;
+            if(!raidData[table]) return;
+            
+            const arr = raidData[table];
+            const newItem = { id: Date.now(), internal: false }; // Default internal to false
+            
+            // Default Values based on Type
+            if(table === 'risks') { Object.assign(newItem, { desc: "New Risk", prob: "Low", impact: "Low", response: "Accept", owner: "PM", status: "Open" }); }
+            else if(table === 'issues') { Object.assign(newItem, { desc: "New Issue", priority: "Med", sev: "Med", owner: "PM", raised: new Date().toISOString().split('T')[0], status: "Open" }); }
+            else if(table === 'changes') { Object.assign(newItem, { desc: "Change Request", raisedBy: "Stakeholder", cost: "$0", time: "0 Days", status: "Pending" }); }
+            else if(table === 'comms') { Object.assign(newItem, { stake: "Stakeholder", info: "Update", freq: "Weekly", method: "Email", provider: "PM" }); }
+            else if(table === 'actions') { Object.assign(newItem, { desc: "New Action", owner: "Unassigned", due: new Date().toISOString().split('T')[0], status: "Pending" }); }
+            
+            arr.push(newItem);
+            renderRAIDTable(table);
+            updateStatusDropdown(table); // Refresh dropdown on add
+        };
+
+        // NEW: Toggle GTT View Logic with UI Feedback
+        window.toggleGTTView = function(type) {
+            raidState[type].gttMode = !raidState[type].gttMode;
+            
+            const btn = document.getElementById(`btn-gtt-view-${type}`);
+            const isGTT = raidState[type].gttMode;
+
+            // Visual toggle of the button style
+            if(isGTT) {
+                // Active (Show All): Solid color
+                if(type === 'risks') btn.className = "flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wide border border-amber-600 bg-amber-600 text-white shadow-sm transition-all";
+                if(type === 'issues') btn.className = "flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wide border border-red-600 bg-red-600 text-white shadow-sm transition-all";
+                if(type === 'changes') btn.className = "flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wide border border-blue-600 bg-blue-600 text-white shadow-sm transition-all";
+                if(type === 'comms') btn.className = "flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wide border border-indigo-600 bg-indigo-600 text-white shadow-sm transition-all";
+                if(type === 'actions') btn.className = "flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wide border border-emerald-600 bg-emerald-600 text-white shadow-sm transition-all";
+            } else {
+                // Inactive (Hide Internal/Client Mode): Outline style
+                if(type === 'risks') btn.className = "flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wide border border-amber-200 text-amber-700 hover:bg-amber-100 transition-all";
+                if(type === 'issues') btn.className = "flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wide border border-red-200 text-red-700 hover:bg-red-100 transition-all";
+                if(type === 'changes') btn.className = "flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wide border border-blue-200 text-blue-700 hover:bg-blue-100 transition-all";
+                if(type === 'comms') btn.className = "flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wide border border-indigo-200 text-indigo-700 hover:bg-indigo-100 transition-all";
+                if(type === 'actions') btn.className = "flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wide border border-emerald-200 text-emerald-700 hover:bg-emerald-100 transition-all";
             }
+
+            renderRAIDTable(type);
+        };
+
+        window.updateInternalStatus = function(type, id) {
+             const item = raidData[type].find(i => i.id === id);
+             if(item) {
+                 item.internal = !item.internal;
+                 // Re-render if we are currently hiding internals (GTT Mode OFF), to make it disappear immediately
+                 if(!raidState[type].gttMode) renderRAIDTable(type);
+                 else renderRAIDTable(type); // Re-render to update icon
+             }
+        };
+
+        window.applyRAIDFilter = function(type) {
+            const textEl = document.getElementById(`search-text-${type}`);
+            const statusEl = document.getElementById(`status-filter-${type}`);
+            
+            if(textEl) raidState[type].filter = textEl.value;
+            if(statusEl) raidState[type].statusFilter = statusEl.value;
+            
+            renderRAIDTable(type);
+        };
+
+        window.sortRAID = function(type, column) {
+            if (raidState[type].sortCol === column) {
+                raidState[type].sortDir = raidState[type].sortDir === 'asc' ? 'desc' : 'asc';
+            } else {
+                raidState[type].sortCol = column;
+                raidState[type].sortDir = 'asc';
+            }
+            renderRAIDTable(type);
+        };
+        
+        function updateStatusDropdown(type) {
+            const select = document.getElementById(`status-filter-${type}`);
+            if(!select || !raidData[type]) return;
+
+            // Get unique statuses
+            const uniqueStatuses = new Set();
+            raidData[type].forEach(item => {
+                if(item.status) uniqueStatuses.add(item.status);
+            });
+
+            // Save current selection
+            const currentVal = select.value;
+
+            // Rebuild Options
+            let html = '<option value="All">All Status</option>';
+            uniqueStatuses.forEach(s => {
+                html += `<option value="${s}">${s}</option>`;
+            });
+            select.innerHTML = html;
+            
+            // Restore selection if valid
+            if([...uniqueStatuses].includes(currentVal) || currentVal === 'All') {
+                select.value = currentVal;
+            }
+        }
+
+        // FIXED: Now uses the custom modal
+        window.deleteRAIDItem = function(table, id) {
+            window.openConfirmModal(`Delete this item from ${table}?`, () => {
+                raidData[table] = raidData[table].filter(i => i.id != id);
+                renderRAIDTable(table);
+                updateStatusDropdown(table); // Refresh dropdown on delete
+            });
+        };
+
+        window.makeEditableRAID = function(cell, id, field, table) {
+            if (cell.querySelector('input, select')) return;
+            
+            const item = raidData[table].find(i => i.id === id);
+            if(!item) return;
+            
+            const oldVal = item[field];
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = oldVal || '';
+            input.className = 'w-full h-full p-1 text-xs border border-indigo-500 rounded bg-indigo-50 outline-none';
+            
+            // FIXED: LOCAL DOM UPDATE ONLY (Prevents destroying Delete button)
+            input.onblur = () => {
+                const newVal = input.value;
+                item[field] = newVal;
+                cell.innerHTML = newVal; 
+                
+                // Refresh status dropdown if status changed
+                if(field === 'status') updateStatusDropdown(table);
+
+                // NEW LOGIC FOR SYNC (Actions -> Schedule)
+                if (table === 'actions' && field === 'status' && (newVal.toLowerCase() === 'done' || newVal.toLowerCase() === 'complete')) {
+                    if (item.linkedTaskId) {
+                        const task = projectData.find(t => t.id === item.linkedTaskId);
+                        if (task) {
+                            task.pct = 100;
+                            // Note: Schedule view will refresh when you switch back to it
+                        }
+                    }
+                }
+            };
+            input.onkeydown = (e) => {
+                if(e.key === 'Enter') input.blur();
+            };
+            
+            cell.innerHTML = '';
+            cell.appendChild(input);
+            input.focus();
+        };
+
+        function renderRAIDTable(type) {
+            const tbody = document.getElementById(`tbody-${type}`);
+            if(!tbody || !raidData[type]) return;
+            
+            // Filter
+            let data = raidData[type].filter(item => {
+                // GTT Mode Check: If GTT Mode is OFF (false), HIDE internal items
+                if (!raidState[type].gttMode && item.internal) return false;
+
+                const term = raidState[type].filter.toLowerCase();
+                const statusFilter = raidState[type].statusFilter;
+                
+                // Status Filter Check
+                if (statusFilter !== 'All' && item.status !== statusFilter) return false;
+
+                // Text Search Check
+                if (!term) return true;
+                return Object.values(item).some(val => String(val).toLowerCase().includes(term));
+            });
+
+            // Sort
+            const { sortCol, sortDir } = raidState[type];
+            data.sort((a, b) => {
+                let valA = a[sortCol];
+                let valB = b[sortCol];
+                
+                if (typeof valA === 'number' && typeof valB === 'number') {
+                     return sortDir === 'asc' ? valA - valB : valB - valA;
+                }
+                valA = String(valA || '').toLowerCase();
+                valB = String(valB || '').toLowerCase();
+                if(valA < valB) return sortDir === 'asc' ? -1 : 1;
+                if(valA > valB) return sortDir === 'asc' ? 1 : -1;
+                return 0;
+            });
+
+            // Update Header Icons
+            document.querySelectorAll(`.sort-icon-${type}`).forEach(el => el.innerHTML = '⇅');
+            const activeIcon = document.getElementById(`sort-icon-${type}-${sortCol}`);
+            if(activeIcon) activeIcon.innerHTML = sortDir === 'asc' ? '↑' : '↓';
+
+            tbody.innerHTML = '';
+            data.forEach(item => {
+                // Visual cue for Internal Rows
+                const rowClass = item.internal 
+                    ? 'raid-row bg-slate-50 border-b border-slate-200 border-l-4 border-l-slate-400 text-slate-500' // Internal Style
+                    : 'raid-row hover:bg-slate-50 border-b border-slate-100 border-l-4 border-l-transparent transition-colors'; // Normal Style
+
+                const tr = document.createElement('tr');
+                tr.className = rowClass;
+                
+                let cells = '';
+                const displayId = item.id > 9999 ? 'New' : item.id;
+                
+                cells += `<td class="p-3 text-center text-xs font-mono font-bold ${item.internal ? 'text-slate-400' : 'text-slate-600'}">${displayId}</td>`;
+                
+                // NEW: Icon Toggle for Internal
+                const eyeIcon = item.internal 
+                    // Slashed Eye (Internal)
+                    ? `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mx-auto text-rose-500 hover:text-rose-700" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>`
+                    // Open Eye (Public)
+                    : `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mx-auto text-slate-300 hover:text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>`;
+
+                cells += `<td class="p-3 text-center cursor-pointer" onclick="window.updateInternalStatus('${type}', ${item.id})" title="${item.internal ? 'Internal (Hidden in Client Mode)' : 'Public (Visible)'}">${eyeIcon}</td>`;
+
+                // Specific Cells (Calls window.makeEditableRAID)
+                if(type === 'risks') {
+                    cells += `<td class="p-3 text-xs text-slate-700 cursor-pointer hover:bg-indigo-50" onclick="window.makeEditableRAID(this, ${item.id}, 'desc', 'risks')">${item.desc}</td>`;
+                    cells += `<td class="p-3 text-xs text-slate-600 cursor-pointer hover:bg-indigo-50" onclick="window.makeEditableRAID(this, ${item.id}, 'prob', 'risks')">${item.prob}</td>`;
+                    cells += `<td class="p-3 text-xs text-slate-600 cursor-pointer hover:bg-indigo-50" onclick="window.makeEditableRAID(this, ${item.id}, 'impact', 'risks')">${item.impact}</td>`;
+                    cells += `<td class="p-3 text-xs text-slate-600 cursor-pointer hover:bg-indigo-50" onclick="window.makeEditableRAID(this, ${item.id}, 'response', 'risks')">${item.response}</td>`;
+                    cells += `<td class="p-3 text-xs text-slate-600 cursor-pointer hover:bg-indigo-50" onclick="window.makeEditableRAID(this, ${item.id}, 'owner', 'risks')">${item.owner}</td>`;
+                    cells += `<td class="p-3 text-xs font-bold ${item.status==='Open'?'text-rose-600':'text-emerald-600'} cursor-pointer hover:bg-indigo-50" onclick="window.makeEditableRAID(this, ${item.id}, 'status', 'risks')">${item.status}</td>`;
+                } else if(type === 'issues') {
+                    cells += `<td class="p-3 text-xs text-slate-700 cursor-pointer hover:bg-indigo-50" onclick="window.makeEditableRAID(this, ${item.id}, 'desc', 'issues')">${item.desc}</td>`;
+                    cells += `<td class="p-3 text-xs text-slate-600 cursor-pointer hover:bg-indigo-50" onclick="window.makeEditableRAID(this, ${item.id}, 'priority', 'issues')">${item.priority}</td>`;
+                    cells += `<td class="p-3 text-xs text-slate-600 cursor-pointer hover:bg-indigo-50" onclick="window.makeEditableRAID(this, ${item.id}, 'sev', 'issues')">${item.sev}</td>`;
+                    cells += `<td class="p-3 text-xs text-slate-600 cursor-pointer hover:bg-indigo-50" onclick="window.makeEditableRAID(this, ${item.id}, 'owner', 'issues')">${item.owner}</td>`;
+                    cells += `<td class="p-3 text-xs text-slate-600 cursor-pointer hover:bg-indigo-50" onclick="window.makeEditableRAID(this, ${item.id}, 'raised', 'issues')">${item.raised}</td>`;
+                    cells += `<td class="p-3 text-xs font-bold ${item.status==='Open'?'text-rose-600':'text-emerald-600'} cursor-pointer hover:bg-indigo-50" onclick="window.makeEditableRAID(this, ${item.id}, 'status', 'issues')">${item.status}</td>`;
+                } else if(type === 'changes') {
+                    cells += `<td class="p-3 text-xs text-slate-700 cursor-pointer hover:bg-indigo-50" onclick="window.makeEditableRAID(this, ${item.id}, 'desc', 'changes')">${item.desc}</td>`;
+                    cells += `<td class="p-3 text-xs text-slate-600 cursor-pointer hover:bg-indigo-50" onclick="window.makeEditableRAID(this, ${item.id}, 'raisedBy', 'changes')">${item.raisedBy}</td>`;
+                    cells += `<td class="p-3 text-xs text-slate-600 cursor-pointer hover:bg-indigo-50" onclick="window.makeEditableRAID(this, ${item.id}, 'cost', 'changes')">${item.cost}</td>`;
+                    cells += `<td class="p-3 text-xs text-slate-600 cursor-pointer hover:bg-indigo-50" onclick="window.makeEditableRAID(this, ${item.id}, 'time', 'changes')">${item.time}</td>`;
+                    cells += `<td class="p-3 text-xs font-bold ${item.status==='Pending'?'text-amber-500':(item.status==='Approved'?'text-emerald-600':'text-rose-600')} cursor-pointer hover:bg-indigo-50" onclick="window.makeEditableRAID(this, ${item.id}, 'status', 'changes')">${item.status}</td>`;
+                } else if(type === 'comms') {
+                    cells += `<td class="p-3 text-xs text-slate-700 cursor-pointer hover:bg-indigo-50" onclick="window.makeEditableRAID(this, ${item.id}, 'stake', 'comms')">${item.stake}</td>`;
+                    cells += `<td class="p-3 text-xs text-slate-600 cursor-pointer hover:bg-indigo-50" onclick="window.makeEditableRAID(this, ${item.id}, 'info', 'comms')">${item.info}</td>`;
+                    cells += `<td class="p-3 text-xs text-slate-600 cursor-pointer hover:bg-indigo-50" onclick="window.makeEditableRAID(this, ${item.id}, 'freq', 'comms')">${item.freq}</td>`;
+                    cells += `<td class="p-3 text-xs text-slate-600 cursor-pointer hover:bg-indigo-50" onclick="window.makeEditableRAID(this, ${item.id}, 'method', 'comms')">${item.method}</td>`;
+                    cells += `<td class="p-3 text-xs text-slate-600 cursor-pointer hover:bg-indigo-50" onclick="window.makeEditableRAID(this, ${item.id}, 'provider', 'comms')">${item.provider}</td>`;
+                } else if(type === 'actions') {
+                    cells += `<td class="p-3 text-xs text-slate-700 cursor-pointer hover:bg-indigo-50" onclick="window.makeEditableRAID(this, ${item.id}, 'desc', 'actions')">${item.desc}</td>`;
+                    cells += `<td class="p-3 text-xs text-slate-600 cursor-pointer hover:bg-indigo-50" onclick="window.makeEditableRAID(this, ${item.id}, 'owner', 'actions')">${item.owner}</td>`;
+                    cells += `<td class="p-3 text-xs text-slate-600 cursor-pointer hover:bg-indigo-50" onclick="window.makeEditableRAID(this, ${item.id}, 'due', 'actions')">${item.due}</td>`;
+                    cells += `<td class="p-3 text-xs font-bold ${item.status==='Done'?'text-emerald-600':'text-amber-600'} cursor-pointer hover:bg-indigo-50" onclick="window.makeEditableRAID(this, ${item.id}, 'status', 'actions')">${item.status}</td>`;
+                }
+
+                // FIXED: Standard onclick using global window function
+                cells += `<td class="p-3 text-center"><button type="button" data-action="delete-raid" data-table="${type}" data-id="${item.id}" class="text-slate-400 hover:text-rose-600 group"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 pointer-events-none group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button></td>`;
+                
+                tr.innerHTML = cells;
+                tbody.appendChild(tr);
+            });
         }
 
         // --- INIT & RENDER ---
         window.addEventListener('load', () => {
             initData();
             refreshView();
-            enableColumnResizing(); // Initialize column resizing
-            enablePanelResizing();  // Initialize panel resizing
+            enableColumnResizing(); 
+            enablePanelResizing();
+            
+            // --- FIXED: GLOBAL EVENT DELEGATION FOR DELETION ---
+            // This ensures clicks are caught even for newly added rows
+            document.body.addEventListener('click', function(e) {
+                // Find the closest button if user clicks the icon inside
+                const btn = e.target.closest('button[data-action="delete-raid"]');
+                
+                if (btn) {
+                    e.preventDefault(); // Stop any other events
+                    const tableType = btn.getAttribute('data-table');
+                    const itemId = parseInt(btn.getAttribute('data-id')); // Ensure numeric comparison
+                    
+                    if (confirm(`Delete item ${itemId} from ${tableType}?`)) {
+                        raidData[tableType] = raidData[tableType].filter(i => i.id !== itemId);
+                        renderRAIDTable(tableType);
+                    }
+                }
+            });
             
             const grid = document.getElementById('grid-scroll');
             const chart = document.getElementById('chart-scroll');
@@ -1133,6 +1796,9 @@
                 const dateClass = isDateDisabled ? "bg-slate-50 text-slate-400 cursor-not-allowed" : "editable";
                 const dateClick = isDateDisabled ? "" : `onclick="makeEditable(this, ${task.id}, 'start')"`;
 
+                // Calculate if this task is linked to an action
+                const isLinked = task.linkedActionId ? 'checked' : '';
+
                 row.innerHTML = `
                     <td class="font-mono text-xs text-slate-400 font-bold text-center border-r border-slate-100">${task.id}</td>
                     <td class="border-r border-slate-100 relative editable" style="height:40px;">
@@ -1149,6 +1815,10 @@
                     <td class="text-center border-r border-slate-100 editable" onclick="makeEditable(this, ${task.id}, 'pct')">
                         <span class="text-[9px] font-bold text-slate-400">${task.pct}%</span>
                     </td>
+                    <!-- New Track Checkbox Cell -->
+                    <td class="text-center border-r border-slate-100">
+                        <input type="checkbox" ${isLinked} onchange="window.toggleTaskAction(${task.id}, this.checked)" class="accent-indigo-600 cursor-pointer w-3.5 h-3.5">
+                    </td>
                     <td class="text-center border-r border-slate-100">
                         <div class="flex items-center justify-center h-full gap-1">
                             <button onclick="openTaskModal(${task.id}, 'edit')" class="btn-icon" title="Edit"><svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg></button>
@@ -1164,7 +1834,7 @@
         }
         
         function makeEditable(cell, id, field) {
-            if (cell.querySelector('input, select') || cell.classList.contains('editing')) return;
+            if (cell.querySelector('input, select')) return;
             const task = projectData.find(t => t.id === id);
             if (!task) return;
 
